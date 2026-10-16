@@ -17,6 +17,10 @@ record of which parts were generated and which parts I decided or wrote.
   (no typed text by default, opt-in to include it), and word prediction with my own
   trie, measured with prediction on vs. off; set the new priority order (practice
   games cut first).
+- Spec update (2026-10-16): the name Tessera; the locked React stack; the new
+  milestone order with a hardening pass; M4's three-condition comparison; the safety
+  rules; the face visualization feature in two tiers; DEMO_CHECKLIST.md (I write
+  the video script myself).
 - _To fill in as I go: code I write or change myself, testing with my own webcam,
   results I collect, design decisions I make._
 
@@ -50,6 +54,13 @@ record of which parts were generated and which parts I decided or wrote.
   §5 (word prediction design), README updates.
 - Checks: Web Share and clipboard user-activation rules (W3C spec plus a test in
   headless Chromium 141), and a first look at word-list licenses (not yet verified).
+
+### Spec update (2026-10-16)
+- Rewrote `PLAN.md`, added a `DECISIONS.md` entry and `DEMO_CHECKLIST.md`, and renamed
+  the app in the UI and README.
+- Safety fix: auto-scan pauses when the face is lost (`src/ui/talkScreen.ts`,
+  `Scanner.hold()` in `src/keyboard/scanner.ts`, plus a test).
+- Checks: a live test of MediaPipe's facial transformation matrix and mesh data.
 
 ## Third-party code and assets (neither AI nor me)
 - `@mediapipe/tasks-vision` library and `face_landmarker.task` model, © Google, Apache-2.0.

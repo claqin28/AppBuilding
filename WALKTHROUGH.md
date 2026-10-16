@@ -189,7 +189,7 @@ changes more than twice a second.
 
 ## 5. Word prediction (planned: this is the design, not built yet)
 
-Planned for M10 (`PLAN.md`). This section explains the intended design so it can be
+Planned for M8 (`PLAN.md`). This section explains the intended design so it can be
 discussed and challenged before it's built. It will be updated to match the real code.
 
 **The problem.** In scanning, each letter costs about 2 selections (choose the row,

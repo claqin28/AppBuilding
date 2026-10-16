@@ -1,6 +1,6 @@
-# Face Gesture Control
+# Tessera
 
-An assistive web app prototype for adults with limited or no hand and arm movement
+Tessera is an assistive web app prototype for adults with limited or no hand and arm movement
 (for example high spinal cord injury, ALS, or muscular dystrophy) who can still make
 some voluntary facial movements. A webcam watches for small facial movements, and
 the person uses them to build a message on a scanning keyboard and speak it aloud.
@@ -38,7 +38,9 @@ thresholds for that person.
 3. **Talk:** a row/column scanning keyboard (letters ordered by frequency), quick
    phrases, and speech with an **on-device voice**. Auto-scan needs just one reliable
    movement. Step-scan uses two or three. A pause mode stops scanning during
-   conversation, and resuming requires a deliberately long hold.
+   conversation, and resuming requires a deliberately long hold. **If the camera
+   loses your face, control pauses and says so;** nothing can be selected until you're
+   back in view.
 4. **Recordings (traces):** calibration can be saved as numbers only (never images)
    and replayed without a camera, for testing and re-analysis.
 

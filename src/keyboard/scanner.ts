@@ -65,6 +65,15 @@ export class Scanner {
     this.schedule(now, true);
   }
 
+  /**
+   * Keeps the highlight where it is and restarts its timer with the longer
+   * first-item wait. Used when scanning resumes after the face was lost, so
+   * the person gets time to settle before anything moves.
+   */
+  hold(now: number): void {
+    this.schedule(now, true);
+  }
+
   reset(now: number): void {
     this.level = "row";
     this.row = 0;

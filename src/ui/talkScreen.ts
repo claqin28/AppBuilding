@@ -39,6 +39,8 @@ export class TalkScreen implements Screen {
   private paused = false;
   private resumeStart: number | null = null;
   private lastFaceT = performance.now();
+  /** True while control is paused because the face can't be seen. */
+  private trackingPaused = false;
   private scanner!: Scanner;
   private engine!: ControlEngine;
   private meters = new Meters();
@@ -224,16 +226,27 @@ export class TalkScreen implements Screen {
 
   private onTick(): void {
     const now = performance.now();
-    if (!this.paused && this.scanner.tick(now)) this.renderHighlight();
+    // Safety rule: if the face can't be seen, control pauses. Auto-scan stops
+    // moving (nothing could be selected anyway), and when the face is back the
+    // highlight stays put a little longer so the person can get ready.
     const faceLost = now - this.lastFaceT > FACE_LOST_MS;
+    if (faceLost && !this.trackingPaused) {
+      this.trackingPaused = true;
+      this.els.grid.classList.add("dimmed");
+    } else if (!faceLost && this.trackingPaused) {
+      this.trackingPaused = false;
+      this.els.grid.classList.toggle("dimmed", this.paused);
+      this.scanner.hold(now);
+    }
+    if (!this.paused && !this.trackingPaused && this.scanner.tick(now)) this.renderHighlight();
     const where =
       this.scanner.level === "row" ? "Choosing a row" : `In row: ${this.layout[this.scanner.row].map((k) => k.label).join(" ")}`;
     this.els.status.textContent = this.paused
       ? "Paused"
-      : faceLost
-        ? "Can't see your face. Scanning continues, but gestures can't be detected."
-        : `${this.scanner.mode === "auto" ? "Auto-scan" : "Step-scan"} · ${where}`;
-    this.els.status.classList.toggle("bad", faceLost && !this.paused);
+      : this.trackingPaused
+        ? "Paused: can't see your face. Scanning continues when your face is back in view."
+        : `Tracking · ${this.scanner.mode === "auto" ? "Auto-scan" : "Step-scan"} · ${where}`;
+    this.els.status.classList.toggle("bad", this.trackingPaused && !this.paused);
   }
 
   private chooseKey(key: Key): void {
@@ -258,7 +271,7 @@ export class TalkScreen implements Screen {
     this.resumeStart = null;
     this.els.pausedBanner.hidden = !paused;
     this.els.resumeHint.textContent = "";
-    this.els.grid.classList.toggle("dimmed", paused);
+    this.els.grid.classList.toggle("dimmed", paused || this.trackingPaused);
     if (!paused) this.scanner.reset(performance.now());
     this.renderHighlight();
   }

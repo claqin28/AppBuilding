@@ -217,3 +217,89 @@ of Talk); and a cap of about 12 phrases, since each row costs scan time.
 - **The README states what the host sees:** GitHub receives normal request info (IP,
   browser) when files are downloaded, like any website, but never camera data or text.
 - The CSP is a `<meta>` tag, so it works on GitHub Pages, which can't set custom headers.
+
+## Spec update: Tessera, locked stack, new order, safety rules, face visualization (2026-10-16)
+
+**Name:** the project is now **Tessera**. The README, page title, and header are updated.
+
+**Stack: React is locked, but the current UI isn't React.** The first spec said
+"vanilla TypeScript, no UI framework", so M1–M3's UI was written as plain DOM code. The
+locked stack is React + TypeScript + Vite, so the next step (**R** in `PLAN.md`) moves
+only the UI layer to React. The signal, keyboard, and vision modules are already
+framework-free and stay as they are. The camera loop stays outside React (rAF + refs).
+This is aligning to the locked stack, not changing it.
+
+**Milestone numbering now follows the owner's spec:** M5 drift, M6 quick phrases, M7
+share/export, M8 word prediction, M9 practice games (first to cut), M10 polish + PWA.
+Older entries in this file that say "M8 quick phrases / M9 share / M10 prediction"
+refer to the previous numbering: old M8 = M6, old M9 = M7, old M10 = M8, old M6 = M9,
+old M7 = M10.
+
+**New steps:** a **hardening pass (H)** after M4, with no new features. **Face
+visualization** in two tiers, V1 (with M1–M2) and V2 (after M4 + H, before M6–M8). If
+time is tight, M9 is cut before the visualization.
+
+**M4(c) changed to three conditions:** (1) default fixed gestures and thresholds, (2) the
+same fixed gestures with one-pass user-set thresholds (like hand-tuned tools), and (3)
+Tessera's automatic selection. All are reported, even if (3) doesn't win. Condition 2
+is the fairer comparison: it tests whether *automatic* selection beats a person tuning
+by hand, which is what existing tools offer.
+
+**Safety rules, checked against the current code:**
+- *Face lost → pause control:* **this was violated.** Auto-scan kept moving when the
+  face was lost; actions couldn't fire, but the highlight moved on. **Fixed now:**
+  scanning stops, the keyboard dims, and the message reads "Paused: can't see your
+  face…". When the face returns, `Scanner.hold()` keeps the highlight in place for the
+  longer first-item wait. Tested: unit test plus a replay with a 6-second face gap
+  (the highlight stayed on the same row the whole time).
+- *Never fire random actions:* the engine fires nothing without a face, and the
+  detector must see the person relax after the face returns (from M3).
+- *Tracking state always visible:* the Talk status now starts with "Tracking" or
+  "Paused". **A global tracking/paused/calibrating indicator is still to do** (R + H).
+- *Pause shortcut:* there's a Pause key (gesture) and a helper button. **A keyboard
+  shortcut is still to do** (R).
+- *Backspace/undo:* Delete exists. **Undo for "Clear all" is still to do** (R).
+- *Speak only on explicit selection:* already true (the Speak key or a chosen phrase).
+- *"Tracking uncertain"* (low framerate, multiple faces) is handled in H.
+
+**Claims audit:** the README never says existing tools lack customization. Its table
+says Camera Switches, Switch Control, and Gameface are all tuned by hand, which is
+accurate. It already says voice control may be better for people with reliable speech.
+
+**Face visualization decisions**
+- **What "mesh only" protects:** it keeps the camera image off the screen (for screen
+  sharing, demo videos, and bystanders). It does *not* change what's processed, since
+  frames never leave the device in either mode. The UI must say this accurately and
+  not imply extra data protection.
+- **The transformation matrix question (checked 2026-10-16):** the official docs site
+  was unreachable from the dev environment. I checked the package's type
+  documentation and ran a live test with `outputFacialTransformationMatrixes: true`:
+  - It returns one **4×4 matrix** per face: rotation plus translation, stored
+    column-major. On the frontal test photo the rotation was near identity and the
+    translation was about (−0.4, 22.5, −65.4), which looks like centimetres. The docs
+    describe it as transforming the canonical face to the detected face.
+  - **It helps Tier 2:** its inverse removes head pose, so the 3D mesh can stay steady
+    while the head moves. It would also enable head-movement gestures later (proposed,
+    not approved).
+  - Each face also has **478 landmarks with x, y, z**. The mesh connections come as
+    **2,556 edges** (`FACE_LANDMARKS_TESSELATION`), *not triangles*. Tier 2 either
+    draws the mesh as colored lines/points, or derives triangles from the edges. Decide
+    at V2.
+  - *To verify yourself:* read the official Face Landmarker web guide and confirm the
+    matrix's description and units.
+- **Generic vs. personal face shape for the movement map (recommendation):** color a
+  **generic face mesh**, not the person's own face geometry, in anything stored or
+  exported. A person's 3D facial geometry is more identifying than movement scores.
+  A generic mesh carries the same information (which regions work, by how much)
+  without storing what someone's face looks like. The live view can use their real
+  landmarks in memory only. This needs owner approval.
+- **Three.js** (MIT, free) is lazy-loaded with a dynamic `import()` into its own file,
+  served from this site, so it fits the CSP. It goes in `ATTRIBUTION.md` when added.
+- **Colors** come with numbers and a legend, and the palette is checked for
+  color-vision deficiency. The view renders on demand (when data changes), not in a
+  constant loop.
+- **The pure parts stay testable:** gesture → face-region mapping and region scores are
+  plain TypeScript in `src/signal/`, with no React or Three.js imports.
+
+**DEMO_CHECKLIST.md added:** what the 3-minute video should show, as a checklist, not a
+script.

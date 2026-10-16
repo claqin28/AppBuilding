@@ -13,7 +13,9 @@ are in `node_modules/*/LICENSE`.
 
 ## Planned
 
-- **Word-frequency list for word prediction (M10): not chosen yet.** It must allow
+- **Three.js** for the 3D movement map (V2): MIT license. To be added here with its
+  version when V2 is built.
+- **Word-frequency list for word prediction (M8): not chosen yet.** It must allow
   redistribution with at most attribution (MIT/BSD/Apache/CC0/CC BY), verified from
   the source's own LICENSE file. When it's chosen, it will be recorded here with its
   source URL, license text location, version or date, and any changes made (for example

@@ -1,148 +1,210 @@
-# Plan
+# Tessera: plan
 
 What gets built, in what order, and what gets cut first. Reasons live in
 `DECISIONS.md`; algorithm explanations live in `WALKTHROUGH.md`.
 
 ## Hard constraints (apply to every milestone)
 
-1. **Everything runs in the browser.** No video or frames leave the device or are stored.
-2. **No network calls except loading the app's own files.** Enforced by a
-   Content-Security-Policy (`connect-src 'self'`) in dev and production.
-3. **Any sharing or export is user-initiated and local-only:** copy to clipboard,
-   download a file, or the Web Share API (which hands the content to an app the
-   person picks on their own device). **Nothing is ever sent automatically, and
-   nothing is ever sent to a server.**
-4. Static hosting only (HTTPS), with no accounts and no backend.
-5. **Not a medical device, not an emergency system.** Nothing may imply that the app
-   alerts or calls anyone.
-6. No speech recognition. Text-to-speech uses on-device voices only.
-7. Desktop Chrome on a laptop is the only supported target. Mobile is untested and
-   not claimed.
-8. No user-validation claims. Testers so far are able-bodied volunteers, and that is
-   stated wherever results appear.
+**Cost and stack**
+1. **Everything is free.** No paid services, no API keys, no accounts, no backend.
+   Static hosting on a free tier (GitHub Pages, HTTPS).
+2. **The stack is locked:** React + TypeScript + Vite, `@mediapipe/tasks-vision` Face
+   Landmarker. Desktop Chrome first. iPad Safari is a best-effort test target: no mobile
+   or iPad support is claimed until it's tested.
+3. **Signal-processing code** (calibration, selection, hysteresis, debounce, drift,
+   word prediction, visualization math) is plain TypeScript with **no React or Three.js
+   imports**, and it has unit tests.
+4. **The camera/landmarker loop runs outside React state** (requestAnimationFrame +
+   refs). Only low-frequency UI events go into React state.
+
+**Privacy**
+
+5. Everything runs in the browser. No video or frames leave the device or are stored.
+6. No network calls except loading the app's own files, enforced by a
+   Content-Security-Policy (`connect-src 'self'`).
+7. **Sharing and export are user-initiated and local-only** (copy, download, or the
+   Web Share API). Nothing is sent automatically or to a server.
+8. No browser speech recognition. Text-to-speech uses on-device voices only.
+
+**Safety**
+
+9. When the face is lost or tracking is uncertain, **control pauses with a clear
+   message**. Random actions never fire.
+10. **Tracking state is always visible** (tracking / paused / calibrating).
+11. There's a **pause shortcut** and **backspace/undo**.
+12. Text is spoken **only when the person explicitly selects** Speak or a phrase.
+13. **Not a medical device, not an emergency system.** Nothing may suggest the app
+    alerts or calls anyone.
+
+**Honesty**
+
+14. No user-validation claims. Testers are able-bodied volunteers until a real user
+    exists, and every result says who it was measured on.
+15. Never claim existing tools lack customization, or that phones and tablets lack
+    facial-gesture control. Project Gameface, Apple Switch Control, and Android Camera
+    Switches all allow hand-tuning. Tessera's contribution is *automatic* per-person
+    discovery and selection, adaptation during a session, and measured results.
+    Voice control may suit people with reliable speech better. Tessera complements it.
 
 ## Build order and status
 
-| # | Milestone | Status |
+| Step | What | Status |
 |---|---|---|
-| M1 | Camera + live signals + setup checks | ✅ Done |
-| M2 | Calibration + gesture selection | ✅ Done (thresholds need tuning on real data) |
-| M3 | Control engine + scanning keyboard + speech | ✅ Done (basic quick phrases included) |
-| **M4** | **Evaluation mode** | ⏭ Next, after the first real-webcam test |
+| M1 | Camera, live signals, setup checks, HTTPS deploy | ✅ Done (live on GitHub Pages) |
+| M2 | Calibration + gesture selection | ✅ Done (thresholds need real-data tuning) |
+| M3 | Control engine, scanning keyboard, speech | ✅ Done |
+| **R** | **Move the UI layer to React** (locked stack) | ⏭ **Next.** No behavior change; signal code untouched |
+| **V1** | **Face visualization Tier 1** (2D landmark overlay, mesh-only mode, per-gesture bars) | ⏭ With R (belongs to M1–M2) |
+| M4 | Evaluation mode (the technical result) | Planned |
+| H | Hardening pass (no new features) | Planned |
+| V2 | Face visualization Tier 2: 3D "movement map" | Planned |
 | M5 | Drift and fatigue adaptation | Planned |
-| M8 | Saved, editable quick phrases | Planned (partly done in M3) |
-| M9 | Local share and export (message + progress report) | Planned |
-| M10 | Word prediction | Planned |
-| M6 | Adaptive practice games | Planned. **First to cut** |
-| M7 | Polish, offline install (PWA), public link | Public link: in progress (GitHub Pages). Rest planned |
+| M6 | Saved quick phrases | Planned (basics exist from M3) |
+| M7 | Local share/export + caregiver/OT progress report | Planned |
+| M8 | Word prediction | Planned |
+| M9 | Adaptive practice games | Planned. **First to cut** |
+| M10 | Polish + PWA install (PWA layer built last) | Planned |
 
-(The new features are numbered M8–M10 so that M6 and M7 keep their original names.)
-
-## If time gets tight
-
-Protect in this order: **M1–M4 → M5 → M8 + M9 → M10.** **M6 (practice games) is cut
-first.**
-
-M7 isn't in the priority list. Its **public HTTPS link** (GitHub Pages) was pulled
-forward with the owner's OK (2026-10-16), so volunteers can test without installing
-anything. The **offline install (PWA)** is still a recommendation awaiting approval.
-The rest of M7's polish stays at the end.
+**If time gets tight, protect in this order:** M1–M4 + hardening → M5 → M6–M7 → M8 →
+M9. **M9 is cut first, before the face visualization.**
 
 ---
 
-## M4: Evaluation mode (next)
+## R: Move the UI layer to React (next)
 
-- (a) **60-second idle test:** talk and look around, then count false activations
-  per minute.
+The current UI is plain TypeScript DOM code, because the first spec said "no UI
+framework". The locked stack is React, so the UI layer (the screens in `src/ui/`) gets
+rewritten as React components. What stays the same:
+- `src/signal/`, `src/keyboard/`, and `src/vision/` stay as they are (already
+  framework-free), along with their 86 tests.
+- The camera loop stays outside React (rAF + refs). Components subscribe to it and
+  update React state at most ~10 times per second.
+- Every current behavior stays the same. Done when the existing end-to-end checks pass
+  unchanged.
+
+## V1: Face visualization, Tier 1 (with R)
+
+- **2D landmark overlay** drawn on a canvas over the camera view, using the 478 face
+  landmarks and MediaPipe's official mesh/contour connection lists
+  (`FaceLandmarker.FACE_LANDMARKS_*`). Mirrored exactly like the preview.
+- **"Mesh only" mode:** hides the camera image and shows only the drawn mesh. The
+  camera still runs, because the model needs it. This mode keeps your face off the
+  screen, which matters for screen-sharing, demo videos, and people walking by. It
+  doesn't change what's processed, which never leaves the device in either mode.
+- **Live per-gesture bars:** the 12 candidate gestures (not the 51 raw signals), each
+  with its rest level and thresholds marked once calibration exists.
+- Drawing is throttled (about 15–30 fps), with no animation effects and no flashing.
+
+## M4: Evaluation mode (the technical result)
+
+- (a) **60-second idle test:** talk and look around; count false activations per minute.
 - (b) **Fixed-phrase typing:** characters per minute and error rate.
-- (c) **Personalized vs. fixed thresholds:** the same gestures and the same tests, in
-  alternating order (fixed, personal, personal, fixed).
-- (d) Log calibration time (already recorded).
-- (e) Log session-over-session metrics locally, for the next-day check.
-- Results export to JSON/CSV, by download only (constraint 3).
-- **Added:** a *scan-step simulator* that types the fixed phrases the way a perfect
-  user would and counts scan steps and selections. It's deterministic and needs no
-  camera, so it gives repeatable numbers for comparing keyboard designs (M10).
+- (c) **Three conditions, all reported honestly even if Tessera doesn't win:**
+  1. **Default:** fixed gestures with fixed default thresholds.
+  2. **Hand-tuned:** the same fixed gestures, with thresholds the person sets once
+     using a slider per gesture (like hand-tuned tools).
+  3. **Tessera:** automatic personalized gesture selection and thresholds.
+
+  Condition order is varied between sessions so practice doesn't favor one condition.
+- (d) Calibration time is logged (already recorded).
+- (e) Session-over-session metrics are logged locally for the day-two check.
+- Export JSON/CSV by download only.
+- A **scan-step simulator** gives repeatable best-case numbers without a camera.
+
+## H: Hardening pass (no new features)
+
+- List realistic failure modes and show how each is handled: dim or backlit rooms,
+  glasses, face lost, multiple faces, permission denied, camera busy, hidden tab, low
+  framerate, model load failure, stale service worker.
+- **Fix anything that causes wrong actions or crashes.**
+- **In-app diagnostics panel:** tracking state, framerate, latency, thresholds.
+- **Replay-based regression tests** from recorded traces.
+- **A manual test checklist** for the deployed site, including a Network-tab check that
+  nothing leaves the device.
+- A written list of what couldn't be verified.
+- Already done early: face lost → auto-scan pauses with a clear message (2026-10-16).
+
+## V2: Face visualization, Tier 2, the "movement map" (after M4 + H, before M6–M8)
+
+- A **3D face mesh** rendered with **Three.js** (MIT license, free). It's
+  **lazy-loaded**: the 3D code downloads only when someone turns the view on, and
+  it's served from this site like everything else.
+- **After calibration, face regions are colored by that person's measured
+  reliability and range,** using the real calibration numbers (hit rate, gap above
+  rest). Brow regions use brow raise and brow lowering, mouth corners use smile, and so
+  on. Every color also has a number and a legend, because color alone isn't
+  accessible.
+- **The facial transformation matrix helps** (checked 2026-10-16, see DECISIONS): it
+  gives head rotation and position, so its inverse can hold the mesh steady while the
+  head moves.
+- **Labeled on screen:** "Prototype visualization, not a medical or clinical assessment."
+- **Off switch:** a toggle turns the 3D view off. It also respects reduced motion (no
+  auto-rotation), never flashes, and renders only when its data changes.
+- **In the progress report only as an image the person chooses to export.**
+- **No rigged avatar.**
+- The pure parts (gesture → face-region mapping, region scores, colors) live in
+  `src/signal/` with tests, with no Three.js imports.
 
 ## M5: Drift and fatigue adaptation
 
-Track resting level and active peak over time. Adapt thresholds slowly and within
-safe bounds. Detect fatigue (peaks shrinking) and suggest a break or recalibration.
-Never let adaptation silently make control worse. Fatigue events are logged for the
-M9 report.
+Track the resting level and active peak over time, adapt thresholds slowly within safe
+bounds, detect fatigue (shrinking peaks), and suggest a break or recalibration. Never
+let adaptation silently make control worse. Fatigue events are logged for the M7 report.
 
-## M8: Saved quick phrases
+## M6: Saved quick phrases
 
-Already built in M3: a Phrases key on the keyboard, one phrase per row (one SELECT
-speaks it), default phrases, and a "not an emergency system" note on the Talk screen.
+Already done in M3: the Phrases key, one SELECT speaks a phrase, default phrases, and
+the "not an emergency system" note.
 
-Still to do:
-- **Editable list stored locally** (localStorage). Defaults: "I need help",
-  "I'm thirsty", "Yes", "No", "Thank you", plus the current extras, all editable.
-- **Helper editor** in Settings (add, edit, reorder, delete), using mouse or keyboard.
-- **"Save message as phrase"**, reachable by scanning, so the person can add phrases
-  without a helper.
-- **A label on the phrase screen itself:** "Phrases are spoken aloud in this room
-  only. This does not alert anyone or call for help."
-- A cap of about 12 phrases, because every extra row costs scan time. The editor says so.
+To do:
+- A user-editable list stored locally.
+- "Save message as phrase", reachable by scanning.
+- A helper editor in Settings.
+- The label "Spoken aloud only. Does not alert anyone or call for help." on the phrase
+  screen itself.
+- A cap of about 12 phrases.
 
-## M9: Local share and export (user-initiated only)
+## M7: Local share/export (user-initiated only)
 
-**(a) Message share**
-- **Copy** and **Save as .txt** can be chosen by scanning, under a "More" key, so
-  they don't slow down normal typing.
-- **Share…** (Web Share API) appears **only as a helper button, and only where the
-  browser supports it.** The browser allows sharing only after a real click or key
-  press, and a face gesture doesn't count. It also isn't available in Chrome on Linux.
-- Each option says where the content goes ("Copied to this computer's clipboard",
-  "Saved to your Downloads folder", "Opens your device's share menu").
+- **(a) Message:**
+  - **Copy** and **Save as .txt**, reachable by scanning.
+  - **Share…** is a helper-clicked button only, because the Web Share API requires a
+    real click and a face gesture doesn't count. It's hidden where the browser doesn't
+    support it.
+- **(b) Progress report:**
+  - A readable summary plus JSON/CSV: per-gesture reliability over time, calibration
+    time, false activations per minute, typing speed, error rate, and fatigue events.
+  - **Excluded by default:** typed text, video (never stored), raw recordings, and
+    the learned word list.
+  - Including text requires an explicit opt-in.
+  - The V2 movement-map image is included only if the person chooses to export it.
 
-**(b) Progress report** for a caregiver or occupational therapist
-- A readable summary (a printable page; "Print → Save as PDF" stays local) plus
-  **JSON and CSV** downloads.
-- Contents: per-gesture reliability over time, calibration time, false activations
-  per minute, typing speed, error rate, fatigue events, and prediction on vs. off
-  (once M10 exists).
-- **Excluded by default:** typed message text, video (never stored at all), raw
-  facial-signal recordings, and the learned word list (it reveals what was typed).
-- **Including message text requires an explicit opt-in checkbox,** unchecked every
-  time the report screen opens.
-- The report shows a preview of exactly what's in the file before download.
+## M8: Word prediction
 
-## M10: Word prediction
+- A trie of my own design, plus a small bundled word-frequency list under a permissive
+  license (recorded in `ATTRIBUTION.md`; not chosen yet).
+- Personal word frequencies, stored locally.
+- The top 3–5 suggestions appear as scan targets.
+- Evaluation: typing speed and keystroke savings with prediction on vs. off, added to
+  M4's evaluation mode.
 
-- **My own implementation:** a trie (prefix tree) with frequency-based ranking.
-- **Bundled base word list:** small (a few thousand words), with a license that allows
-  redistribution with at most attribution (MIT/BSD/Apache/CC0/CC BY), recorded in
-  `ATTRIBUTION.md`. **Not chosen yet;** see the DECISIONS entry. Candidates must be
-  checked from their actual LICENSE files and screened for offensive words.
-- **Personal word frequencies:** learned from words the person finishes, stored only
-  in this browser, and clearable in Settings. Excluded from exports by default.
-- The **top 3–5 suggestions** appear as one scan row. Choosing one replaces the
-  partial word and adds a space.
-- **Evaluation (added to M4's evaluation mode):** the same fixed phrases with
-  prediction on vs. off, measuring characters per minute, error rate, selections per
-  character, and **keystroke savings**. The scan-step simulator gives the
-  best-case savings, and real typing shows whether that turns into speed.
-- No network calls (constraint 2).
+## M9: Adaptive practice games (first to cut)
 
-## M6: Practice games (first to cut)
+Short target/hold games focused on the weakest gesture, with adjustable difficulty and
+per-gesture mastery.
 
-Short target/hold games that give extra practice on the weakest gesture and adjust
-difficulty. Track per-gesture mastery.
+## M10: Polish + PWA (PWA layer built last)
 
-## M7: Polish
-
-High contrast, large targets, reduced motion, no flashing faster than 3 Hz (most of
-this is already in place), caregiver-assisted setup mode, clear error states, offline
-install (PWA), and the public link. Optional attention chime, labeled as not an
-emergency system.
+- High contrast, large targets, reduced motion, nothing flashing faster than 3 Hz.
+- A caregiver-assisted setup mode and clear error states.
+- **PWA:** web manifest, a service worker that caches the model and assets, and an
+  install button. **Test that updates don't serve a stale cached version.**
 
 ---
 
 ## Proposed, not approved (won't be built unless you say so)
 
-- **Head movements as candidate gestures** (turn, nod, tilt). Many people with high
-  spinal cord injury have reliable head control. MediaPipe can output head pose.
-- **Next-word prediction** (word pairs), only after M10 shows whether single-word
-  prediction helps at all.
+- **Head movements as candidate gestures** (turn, nod, tilt). The transformation matrix
+  makes this straightforward, and many people with high spinal cord injury have
+  reliable head control.
+- **Next-word prediction,** only after M8 shows whether single-word prediction helps.

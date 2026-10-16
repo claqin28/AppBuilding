@@ -41,6 +41,16 @@ describe("Scanner, auto mode", () => {
     expect(s.row).toBe(0);
   });
 
+  it("hold() keeps the highlight in place and restarts the longer first-item wait", () => {
+    const s = new Scanner(KEYBOARD, "auto", SCAN, 0);
+    s.tick(1500); // row 1
+    s.hold(5000); // e.g. face came back at t=5000
+    expect(s.tick(5000 + SCAN)).toBe(false); // still waiting
+    expect(s.row).toBe(1);
+    expect(s.tick(5000 + SCAN * FIRST_ITEM_FACTOR)).toBe(true);
+    expect(s.row).toBe(2);
+  });
+
   it("BACK leaves a row without choosing", () => {
     const s = new Scanner(KEYBOARD, "auto", SCAN, 0);
     s.handle("SELECT", 0);
