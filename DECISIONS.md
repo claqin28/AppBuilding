@@ -34,3 +34,14 @@ A short record of key choices and the reasons for them. Newest entries are at th
   a neutral brow, `browDownLeft/Right` read about 0.75. A blendshape's resting level can sit
   far from 0 for a given face, and that is the reason calibration starts with a rest baseline
   instead of a fixed threshold.
+
+## Context change (2026-10-16)
+
+- **This is a personal project for family, not a contest entry.** There's no deadline.
+  Getting it right for the real user matters more than finishing every milestone.
+- **The web app's limit is stated up front.** A browser page can't control other apps.
+  Android Camera Switches and Apple Switch Control can, so the README compares them
+  honestly. This app's own job is to measure which gestures work for a person and to
+  provide in-page communication (keyboard plus speech).
+- **The evaluation measures usefulness and frustration.** False activations during
+  conversation rank first, because that's what makes people give up on a tool.
