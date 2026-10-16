@@ -40,9 +40,11 @@ thresholds for that person.
 4. **Recordings (traces):** calibration can be saved as numbers only (never images)
    and replayed without a camera, for testing and re-analysis.
 
-Planned: an evaluation mode (false activations while talking, typing speed,
-personalized vs. fixed thresholds), drift and fatigue adaptation, practice games,
-and offline install (PWA).
+Planned (see `PLAN.md` for order and status): an evaluation mode (false activations
+while talking, typing speed, personalized vs. fixed thresholds), drift and fatigue
+adaptation, an editable quick-phrase list, local share/export (message and a progress
+report for a caregiver or therapist), word prediction, practice games, and offline
+install (PWA).
 
 ## Supported devices
 
@@ -62,6 +64,10 @@ mobile support until that's tested.
   device only, and Settings has a button to delete them.
 - **A Content-Security-Policy blocks all network requests to other sites,** in both
   the dev server and production builds.
+- **Sharing and export only happen when you choose them,** and only locally: copy to
+  the clipboard, download a file, or your device's share menu. Nothing is ever sent
+  automatically or to a server. Today the only export is the calibration recording,
+  downloaded when you click its button.
 
 ### A finding about MediaPipe's logging
 
@@ -131,4 +137,5 @@ they were measured on.
 
 ## Credits
 
-Uses Google MediaPipe Face Landmarker (Apache-2.0). See `AI_USAGE.md` for AI assistance.
+Uses Google MediaPipe Face Landmarker (Apache-2.0). See `ATTRIBUTION.md` for all
+third-party code and data, and `AI_USAGE.md` for AI assistance.

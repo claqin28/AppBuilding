@@ -184,3 +184,92 @@ take fewer steps. The command row (Speak, Space, Delete, Phrases, Pause) comes f
 The first item after any change stays highlighted 1.5× longer, giving the person
 time to relax and get ready. Scan speed never goes below 0.5 s per step, so nothing
 changes more than twice a second.
+
+---
+
+## 5. Word prediction (planned: this is the design, not built yet)
+
+Planned for M10 (`PLAN.md`). This section explains the intended design so it can be
+discussed and challenged before it's built. It will be updated to match the real code.
+
+**The problem.** In scanning, each letter costs about 2 selections (choose the row,
+then the key) plus waiting for the highlight. "thank you " (10 characters, counting
+the spaces) is about **20 selections**.
+
+**The data structure: a trie (prefix tree).** Each step down the tree is one letter,
+so the path from the top spells a beginning of a word. Nodes where a real word ends
+store that word's counts.
+
+```
+(root)
+ └ t
+   └ h
+     ├ e  ← "the"
+     │ ├ y  ← "they"
+     │ └ n  ← "then"
+     └ a
+       └ n
+         └ k  ← "thank"
+```
+
+To suggest words for "th": walk `t` → `h` (2 steps, however big the word list is),
+then collect the words below that node and rank them. Adding a new word the person
+types is just walking down and creating the missing letters.
+
+*Honest note:* with a few thousand words, a plain list filtered by "starts with"
+would also be fast enough. The trie is chosen because lookups depend on the prefix
+length rather than the list size, and because adding learned words is natural.
+Speed alone isn't the reason.
+
+**Ranking: mix the general list with the person's own words.**
+
+> score(word) = (1 − λ) × base(word) + λ × personal(word)
+
+- **base** = the word's share of all counts in the bundled word list.
+- **personal** = the word's share of all words this person has finished.
+- **λ (lambda)** = n ÷ (n + 50), where n = how many words the person has typed so
+  far. At the start λ = 0, so only the bundled list counts. After 50 words it's
+  half-and-half. After 500 words it's mostly personal. Mixing a general model with a
+  personal one this way is called *interpolation*.
+
+*Worked example (made-up numbers):* the prefix is "th". In the bundled list, "the" has
+a share of 0.06 and "thank" has 0.0004. The person has finished 60 words, 6 of them
+"thank" (personal share 0.1) and none of them "the". So λ = 60 ÷ 110 ≈ 0.55.
+- thank: 0.45 × 0.0004 + 0.55 × 0.1 ≈ **0.055**
+- the: 0.45 × 0.06 + 0.55 × 0 ≈ **0.027**
+
+So "thank" is suggested first *for this person*, even though "the" is far more common
+in general.
+
+**Learning.** When a word is finished (Space, punctuation, or Speak), its personal
+count goes up by 1, and new words are added to the trie. Only letters and apostrophes
+count, and words must be at least 2 letters long. The counts are stored only in this
+browser and can be cleared in Settings. They're **left out of exports by default**,
+because a list of someone's words reveals what they've been saying.
+
+**In the keyboard.** The top 3–5 suggestions form one scan row. Choosing one replaces
+the partial word and adds a space.
+
+**Measuring it: keystroke savings.** In scanning, a "keystroke" is one *selection*
+(one gesture).
+
+> keystroke savings = 1 − (selections with prediction ÷ selections without)
+
+*Hypothetical example:* "thank you " without prediction takes about 20 selections.
+With prediction: t (2), h (2), pick "thank" (2), pick "you" (2) = 8 selections, so
+savings = 1 − 8/20 = **60%**.
+
+**The catch: fewer selections doesn't automatically mean faster typing.** Every time
+suggestions appear, the person has to read them. In auto-scan, the highlight also
+passes through the suggestion row, which costs time on every letter where no
+suggestion is wanted. Published studies of word prediction for people using
+switches have found that keystroke savings often don't translate into faster text
+entry (for example Koester & Levine, 1996, *Augmentative and Alternative
+Communication* 12(3); read the paper before building this, and check the citation
+before quoting it). That's why the evaluation measures **characters per minute**
+with prediction on and off, not just keystroke savings.
+
+**Questions:** Why does a trie lookup depend on the prefix length and not the list
+size? What does λ do, and why does it grow gradually instead of switching straight to
+personal words? How can 60% keystroke savings still fail to make typing faster? Why
+is the learned word list kept out of the progress report by default?

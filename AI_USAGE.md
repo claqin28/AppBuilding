@@ -12,6 +12,11 @@ record of which parts were generated and which parts I decided or wrote.
   control; no speech recognition; primary use = message building + speech + quick
   phrases; no emergency, video-call, or reading features; desktop Chrome as the only
   supported target.
+- Plan update (2026-10-16): the sharing/export constraint (user-initiated,
+  local-only); added saved quick phrases, local share/export with a progress report
+  (no typed text by default, opt-in to include it), and word prediction with my own
+  trie, measured with prediction on vs. off; set the new priority order (practice
+  games cut first).
 - _To fill in as I go: code I write or change myself, testing with my own webcam,
   results I collect, design decisions I make._
 
@@ -39,6 +44,12 @@ record of which parts were generated and which parts I decided or wrote.
 - Research and checks: MediaPipe API verification, comparison with Project Gameface,
   Android Camera Switches, and Apple Switch Control; headless-browser end-to-end tests;
   finding and documenting MediaPipe's usage logger.
+
+### Plan update (2026-10-16)
+- `PLAN.md`, `ATTRIBUTION.md`, the new sections in `DECISIONS.md` and `WALKTHROUGH.md`
+  §5 (word prediction design), README updates.
+- Checks: Web Share and clipboard user-activation rules (W3C spec plus a test in
+  headless Chromium 141), and a first look at word-list licenses (not yet verified).
 
 ## Third-party code and assets (neither AI nor me)
 - `@mediapipe/tasks-vision` library and `face_landmarker.task` model, © Google, Apache-2.0.

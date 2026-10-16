@@ -131,3 +131,73 @@ Built together because calibration's "Try it" check uses the M3 control engine.
   longer than usual, which is harder to trigger by accident. A helper can also click Resume.
 - Phrases are one per row, so one SELECT speaks a phrase. The phrase list includes
   "I need help", with a visible note that the app is not an emergency system.
+
+## Plan update: sharing constraint, quick phrases, share/export, word prediction (2026-10-16)
+
+**New hard constraint (from the project owner):** any sharing or export must be
+user-initiated and local-only (copy, download, or the Web Share API). Nothing is ever
+sent automatically or to a server.
+- **Audit of existing code:** compliant. The only export is "Download calibration
+  recording", which runs only when that button is clicked (`src/ui/resultsScreen.ts`).
+  There are no `fetch`, `XMLHttpRequest`, `sendBeacon`, WebSocket, clipboard, or share
+  calls in `src/`. The CSP still blocks any network request to another site.
+- "Local-only" for Web Share means the content goes to an app the person picks on
+  their own device. The app itself never sends it anywhere. The UI must say this.
+
+**Order and priority (from the project owner):** M4 → M5 → quick phrases → share/export
+→ word prediction. Priority if time is tight: M1–M4, then M5, then quick phrases +
+share/export, then word prediction. Practice games (M6) are cut first. The new
+features are numbered M8–M10 so the original M6/M7 keep their names. See `PLAN.md`.
+- *Recommendation awaiting approval:* do M7's public link and offline install early,
+  since volunteers need a link to test.
+
+**Browser rules that shape M9 (checked 2026-10-16):**
+- `navigator.share()` **requires transient user activation** (a real click or key
+  press). The W3C spec rejects calls without it with `NotAllowedError`, and Mozilla's
+  test suite confirms it. **A face gesture detected by the camera does not count as
+  user activation.** So Share… can only be a helper-clicked button.
+- In Chromium 141 on Linux, `navigator.share` doesn't exist at all. It must be
+  feature-detected and hidden when missing.
+- Clipboard: in Chromium 141 (headless), `writeText` worked **without** a click once
+  the clipboard-write permission was granted. Chrome normally grants it to the active,
+  focused tab. Firefox and Safari require a click. **To verify on real desktop
+  Chrome** before relying on Copy from a face gesture.
+- Downloads started without a click worked in that headless test. Real Chrome may ask
+  "allow multiple downloads?" the first time. **To verify.**
+- Result: Copy and Save-as-.txt are planned as scan-reachable keys (under "More", so
+  they don't slow typing). Share… is helper-only.
+
+**Quick phrases (M8):** the basics already exist from M3. Remaining: an editable,
+locally stored list; "save message as phrase" by scanning; the "spoken aloud only,
+does not alert anyone" label shown on the phrase screen itself (not just at the bottom
+of Talk); and a cap of about 12 phrases, since each row costs scan time.
+
+**Progress report (M9b):**
+- Excluded by default: typed text, raw facial-signal recordings, and the learned word
+  list. The spec required leaving out typed text. I extended that to the recordings
+  and the word list: recordings are detailed per-person facial data, and the word
+  list reveals what was said. Only typed text gets an opt-in checkbox, unchecked each
+  time.
+- A printable summary page plus JSON/CSV, with a preview of exactly what will be in
+  the file.
+
+**Word prediction (M10):**
+- My own trie and ranking, explained in `WALKTHROUGH.md` §5. Ranking interpolates
+  bundled frequencies with personal ones, using λ = n/(n+50).
+- **The word list isn't chosen yet, on purpose.** Requirement: redistribution allowed
+  with at most attribution (MIT/BSD/Apache/CC0/CC BY), verified from the source's own
+  LICENSE file, recorded in `ATTRIBUTION.md`, and screened for offensive words.
+  Leads found so far, *not yet verified*:
+  - **SCOWL** (Kevin Atkinson): Debian's copyright file shows a permissive MIT-style
+    grant. But it gives commonness *levels*, not true frequencies.
+  - **wordfreq**: its code is MIT, but its *data* carries several licenses, with
+    attribution terms from its sources. Any share-alike component would rule it out
+    under "permissive".
+  - **google-10000-english**: license unclear. Avoid unless clarified.
+  - Possible complement: a small conversational core list written by the project owner.
+- **Keystroke savings is not the goal; typing speed is.** Research on word prediction
+  for switch users has found that savings often don't turn into speed (see
+  WALKTHROUGH §5). M4's evaluation measures both, on the same fixed phrases.
+- Where the suggestion row goes involves a trade-off. At the top, it costs a scan step
+  on every letter. At the bottom, it's slow to reach. Start with a top row of up to 4
+  suggestions, then compare with the scan-step simulator before testing with people.
