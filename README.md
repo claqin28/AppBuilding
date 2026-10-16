@@ -79,7 +79,7 @@ Policy" error for that address. The **Network** tab shows no request to any othe
 
 ## Setup
 
-You need Node.js 20+ and desktop Chrome.
+You need Node.js 22.12 or newer (the current LTS from nodejs.org works) and desktop Chrome.
 
 ```bash
 npm install
