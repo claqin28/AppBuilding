@@ -1,28 +1,44 @@
-# AI usage disclosure
+# AI usage record
 
-This project was built with help from an AI coding assistant (Claude, by Anthropic,
-through Claude Code). This file lists which parts the AI generated and which parts
-I wrote. I update it at every milestone.
+This project is built with help from an AI coding assistant (Claude, by Anthropic,
+through Claude Code). It's a personal project, not a contest entry, but I keep an honest
+record of which parts were generated and which parts I decided or wrote.
 
-## What I (the student) did
+## What I (the project owner) did
 
-- Came up with the project idea, the problem framing, and the full feature spec
-  (milestones M1–M7, constraints, evaluation plan).
-- _To fill in as I go: code I write or substantially change myself, testing with my
-  own webcam, results I collect, design decisions I make._
+- The project idea, problem framing, and full feature spec (M1–M7, constraints,
+  evaluation plan).
+- Scope decisions (2026-10-16): target users; positioning as complementary to voice
+  control; no speech recognition; primary use = message building + speech + quick
+  phrases; no emergency, video-call, or reading features; desktop Chrome as the only
+  supported target.
+- _To fill in as I go: code I write or change myself, testing with my own webcam,
+  results I collect, design decisions I make._
 
 ## What the AI generated
 
-### M1: camera and live debug view (2026-10-16)
-- Project scaffolding: `package.json`, `tsconfig.json`, `vite.config.ts` (including the CSP),
-  `.gitignore`, `scripts/copy-wasm.mjs`.
-- `src/vision/landmarker.ts`, `src/vision/camera.ts`: model loading and camera access,
-  based on the official MediaPipe Face Landmarker web guide (credited in code comments).
-- `src/signal/types.ts`, `src/signal/quality.ts`: the frame type plus the position and lighting checks.
-- `src/ui/debugView.ts`, `src/main.ts`, `index.html`, `src/styles.css`: the UI.
-- `tests/quality.test.ts`: unit tests.
-- The text of `DECISIONS.md` and `README.md`.
-- Research: checked the current MediaPipe API and what Google's Project Gameface does today.
+### M1: camera and live debug view
+- Project scaffolding (`package.json`, `tsconfig.json`, `vite.config.ts` with CSP,
+  `.gitignore`, `scripts/copy-wasm.mjs`).
+- `src/vision/landmarker.ts`, `src/vision/camera.ts` (based on the official MediaPipe
+  Face Landmarker web guide, credited in comments).
+- `src/signal/types.ts`, `src/signal/quality.ts`, `src/ui/debugView.ts`, `index.html`,
+  `src/styles.css`, `tests/quality.test.ts`.
+
+### M2 + M3: calibration, selection, control engine, scanning keyboard
+- Signal processing: `src/signal/gestures.ts`, `smoothing.ts`, `trace.ts`,
+  `detector.ts`, `engine.ts`, `calibration.ts`, `selection.ts`, `explain.ts`,
+  `profile.ts`.
+- Keyboard logic: `src/keyboard/scanner.ts`, `layouts.ts`, `typing.ts`.
+- Camera/replay sources: `src/vision/tracker.ts`.
+- UI: `src/main.ts`, `src/ui/*` (app shell, camera check, calibration, results,
+  meters, talk, settings, speech, storage, DOM helpers), `index.html`, `src/styles.css`.
+- Tests: `tests/synth.ts` (synthetic data generator), `tests/detector.test.ts`,
+  `tests/engine.test.ts`, `tests/calibration.test.ts`, `tests/keyboard.test.ts`.
+- Docs: `README.md`, `DECISIONS.md`, `WALKTHROUGH.md`.
+- Research and checks: MediaPipe API verification, comparison with Project Gameface,
+  Android Camera Switches, and Apple Switch Control; headless-browser end-to-end tests;
+  finding and documenting MediaPipe's usage logger.
 
 ## Third-party code and assets (neither AI nor me)
-- The `@mediapipe/tasks-vision` library and the `face_landmarker.task` model, © Google, Apache-2.0.
+- `@mediapipe/tasks-vision` library and `face_landmarker.task` model, © Google, Apache-2.0.

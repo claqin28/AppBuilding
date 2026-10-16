@@ -3,20 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Control a scanning keyboard with facial movements. Runs entirely on your device." />
     <title>Face Gesture Control</title>
   </head>
   <body>
     <header>
       <h1>Face Gesture Control</h1>
       <p class="privacy" role="note">
-        <strong>Privacy:</strong> Your camera video is processed only inside this browser tab.
+        <strong>Private by design:</strong> your camera video is processed only inside this browser tab.
         No video or images are recorded, stored, or sent anywhere.
       </p>
+      <nav aria-label="Steps">
+        <button data-screen="setup">1. Camera check</button>
+        <button data-screen="calibrate">2. Calibrate</button>
+        <button data-screen="talk">3. Talk</button>
+        <button data-screen="settings">Settings</button>
+      </nav>
     </header>
-    <main>
-      <section class="camera-panel" aria-label="Camera">
+    <div class="layout">
+      <aside class="camera-panel" aria-label="Camera">
         <div class="video-wrap">
           <video id="video" playsinline muted aria-label="Your camera preview (mirrored)"></video>
+          <p id="replay-label" class="replay-label" hidden>Replaying a recording · camera off</p>
         </div>
         <button id="start" class="big-button">Start camera</button>
         <p id="status" role="status" aria-live="polite">Press “Start camera”. Your browser will ask for permission.</p>
@@ -26,14 +34,9 @@
           <li id="lighting-check">Lighting: not started</li>
         </ul>
         <p id="perf" class="perf"></p>
-      </section>
-      <section class="signals-panel" aria-labelledby="signals-heading">
-        <h2 id="signals-heading">Live face signals</h2>
-        <p class="hint">Each bar is how strongly the model thinks you're making that movement (0 to 1).</p>
-        <label class="toggle"><input type="checkbox" id="show-all" /> Show all 51 signals</label>
-        <div id="bars" class="bars"></div>
-      </section>
-    </main>
+      </aside>
+      <main id="screen" tabindex="-1"></main>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

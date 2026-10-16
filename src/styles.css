@@ -1,51 +1,153 @@
+/* High-contrast dark theme with large targets. Colors are never the only
+   signal: every state also has text or a shape (✓ / !, outlines, labels). */
 :root {
   --bg: #0f1115;
   --panel: #1a1d24;
+  --panel-2: #232733;
   --text: #f4f6fa;
   --muted: #b8c0cc;
   --accent: #ffd34d;
+  --accent-text: #111;
   --ok: #5ee08a;
   --bad: #ff8a7a;
   --track: #2d323d;
+  --go: #1f6f43;
+  --ready: #6b5a12;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 18px;
-  line-height: 1.4;
+  line-height: 1.45;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); }
-header { padding: 16px 24px; border-bottom: 2px solid var(--track); }
-h1 { margin: 0 0 8px; font-size: 1.6rem; }
-h2 { margin: 0 0 4px; font-size: 1.2rem; }
-.privacy { margin: 0; color: var(--muted); }
+header { padding: 12px 24px 0; border-bottom: 2px solid var(--track); }
+h1 { margin: 0 0 6px; font-size: 1.5rem; }
+h2 { margin: 0 0 8px; font-size: 1.35rem; }
+h3 { margin: 24px 0 8px; font-size: 1.1rem; }
+.privacy { margin: 0 0 10px; color: var(--muted); }
 .privacy strong { color: var(--accent); }
-main { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr); gap: 24px; padding: 24px; }
-@media (max-width: 800px) { main { grid-template-columns: 1fr; padding: 16px; } }
-section { background: var(--panel); border-radius: 12px; padding: 16px; }
-.video-wrap { aspect-ratio: 4 / 3; background: #000; border-radius: 8px; overflow: hidden; }
+nav { display: flex; flex-wrap: wrap; gap: 6px; }
+nav button {
+  min-height: 48px; padding: 8px 18px; font-size: 1rem; color: var(--text);
+  background: transparent; border: 2px solid transparent; border-bottom: none; border-radius: 8px 8px 0 0; cursor: pointer;
+}
+nav button[aria-current="page"] { background: var(--panel); border-color: var(--track); font-weight: 700; }
+
+.layout { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 20px; padding: 20px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; padding: 16px; } }
+aside, main { background: var(--panel); border-radius: 12px; padding: 16px; }
+main:focus { outline: none; }
+
+.video-wrap { position: relative; aspect-ratio: 4 / 3; background: #000; border-radius: 8px; overflow: hidden; }
 /* Mirror ONLY the on-screen preview, so it feels like a mirror. The frames
    given to the model are not mirrored, so "left" in a blendshape name stays
    the user's own left. */
 video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.replay-label { position: absolute; inset: auto 0 0 0; margin: 0; padding: 6px; text-align: center; background: var(--ready); }
+
+button { font: inherit; }
 .big-button {
-  margin-top: 16px; min-height: 56px; padding: 12px 28px; font-size: 1.2rem; font-weight: 700;
-  background: var(--accent); color: #111; border: none; border-radius: 10px; cursor: pointer;
+  margin-top: 16px; min-height: 60px; padding: 12px 28px; font-size: 1.2rem; font-weight: 700;
+  background: var(--accent); color: var(--accent-text); border: none; border-radius: 10px; cursor: pointer;
 }
-.big-button:disabled { opacity: 0.6; cursor: wait; }
-button:focus-visible, input:focus-visible { outline: 4px solid var(--text); outline-offset: 3px; }
+.mid-button {
+  min-height: 52px; padding: 10px 18px; font-size: 1rem; font-weight: 600;
+  background: var(--panel-2); color: var(--text); border: 2px solid var(--muted); border-radius: 10px; cursor: pointer;
+}
+.mid-button.danger { border-color: var(--bad); }
+button:disabled { opacity: 0.55; cursor: not-allowed; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
+  outline: 4px solid var(--accent); outline-offset: 3px;
+}
+.button-row, .control-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; align-items: center; }
+select, input[type="range"] { min-height: 44px; font: inherit; }
+select { background: var(--panel-2); color: var(--text); border: 2px solid var(--muted); border-radius: 8px; padding: 6px 10px; }
+
 #status.error { color: var(--bad); font-weight: 700; }
 .checks { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 6px; }
 .checks li { padding: 6px 10px; border-radius: 6px; background: var(--track); }
 .checks li.ok { border-left: 6px solid var(--ok); }
 .checks li.bad { border-left: 6px solid var(--bad); }
-.perf { color: var(--muted); font-size: 0.85rem; }
-.hint { color: var(--muted); margin: 0 0 8px; }
-.toggle { display: inline-flex; gap: 8px; align-items: center; margin-bottom: 12px; cursor: pointer; }
-.toggle input { width: 22px; height: 22px; }
+.perf, .hint { color: var(--muted); font-size: 0.9rem; }
+.callout { background: var(--panel-2); border-left: 6px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+.toggle { display: inline-flex; gap: 8px; align-items: center; margin: 8px 0; cursor: pointer; }
+.toggle input, .check-item input { width: 24px; height: 24px; }
+
+/* Signal bars (camera check) */
 .bars { display: grid; gap: 4px; }
 .bs-row { display: grid; grid-template-columns: 11em 1fr 3em; gap: 8px; align-items: center; font-size: 0.85rem; }
 .bs-row[hidden] { display: none; }
 .bs-name { font-family: ui-monospace, monospace; overflow: hidden; text-overflow: ellipsis; }
-.bs-track { height: 14px; background: var(--track); border-radius: 4px; overflow: hidden; }
+.bs-track { display: block; height: 14px; background: var(--track); border-radius: 4px; overflow: hidden; }
 .bs-fill { display: block; height: 100%; width: 0; background: var(--accent); }
 .bs-value { font-family: ui-monospace, monospace; text-align: right; }
+
+/* Calibration */
+.check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; border: 2px solid var(--track); border-radius: 8px; padding: 12px; }
+.check-item { display: flex; gap: 8px; align-items: center; min-height: 44px; cursor: pointer; }
+.cal-card { border: 4px solid var(--track); border-radius: 14px; padding: 28px; min-height: 260px; text-align: center; }
+.cal-card[data-mode="ready"] { background: var(--ready); }
+.cal-card[data-mode="go"] { background: var(--go); border-color: var(--ok); }
+.cal-prompt { font-size: 2.2rem; font-weight: 800; margin: 0 0 8px; }
+.cal-sub { font-size: 1.15rem; margin: 0; }
+.cal-meter { max-width: 420px; margin: 18px auto 0; }
+.cal-meter .bs-track { height: 22px; }
+.cal-warn { color: var(--bad); font-weight: 700; min-height: 1.5em; }
+progress { width: 100%; height: 14px; margin-top: 12px; }
+
+/* Results */
+.mapping { display: grid; gap: 10px; }
+.mapping-row { display: grid; grid-template-columns: 6em 1fr minmax(200px, 300px); gap: 10px; align-items: center; }
+@media (max-width: 700px) { .mapping-row { grid-template-columns: 1fr; } }
+.warnings { color: var(--bad); }
+.result-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.result-card { background: var(--panel-2); border-radius: 10px; padding: 12px 14px; border-left: 8px solid var(--track); }
+.result-card.good { border-left-color: var(--ok); }
+.result-card.ok { border-left-color: var(--accent); }
+.result-card.poor { border-left-color: var(--bad); }
+.result-card h4 { margin: 0; display: flex; gap: 8px; align-items: center; font-size: 1.05rem; }
+.result-card .verdict { margin: 4px 0; font-weight: 700; }
+.result-card ul { margin: 0; padding-left: 1.2em; font-size: 0.92rem; }
+.badge { background: var(--accent); color: var(--accent-text); border-radius: 6px; padding: 1px 8px; font-size: 0.8rem; }
+
+/* Gesture meters */
+.meters { display: grid; gap: 8px; margin: 10px 0; }
+.meter-row { display: grid; grid-template-columns: minmax(12em, auto) 1fr; gap: 10px; align-items: center; padding: 4px 8px; border-radius: 8px; border: 3px solid transparent; }
+.meter-row.active { border-color: var(--muted); }
+.meter-row.fired { border-color: var(--ok); background: #183b28; }
+.meter-track { position: relative; display: block; height: 20px; background: var(--track); border-radius: 5px; overflow: hidden; }
+.meter-fill { display: block; height: 100%; width: 0; background: var(--accent); }
+.meter-tick { position: absolute; top: 0; bottom: 0; width: 4px; background: var(--text); }
+
+/* Talk */
+.message { width: 100%; font-size: 1.6rem; padding: 12px; background: #000; color: var(--text); border: 2px solid var(--muted); border-radius: 10px; resize: vertical; }
+.kb-grid { display: grid; gap: 8px; margin-top: 12px; }
+.kb-grid.dimmed { opacity: 0.4; }
+.kb-row { display: flex; gap: 8px; padding: 6px; border-radius: 12px; border: 4px solid transparent; }
+.kb-row.hl-row { border-color: var(--accent); background: #2e2a12; }
+.kb-key {
+  flex: 1 1 0; min-width: 0; min-height: 64px; font-size: 1.5rem; font-weight: 700;
+  background: var(--panel-2); color: var(--text); border: 3px solid var(--track); border-radius: 10px; cursor: pointer;
+}
+.kb-key.kind-speak, .kb-key.kind-space, .kb-key.kind-delete, .kb-key.kind-phrases, .kb-key.kind-pause, .kb-key.kind-clear,
+.kb-key.kind-keyboard { font-size: 1.1rem; }
+.kb-key.kind-speak { border-color: var(--ok); }
+.kb-key.hl-key { background: var(--accent); color: var(--accent-text); border-color: var(--text); }
+.kb-grid.phrases .kb-key { text-align: left; padding-left: 18px; font-size: 1.3rem; }
+.talk-status { font-weight: 600; }
+.talk-status.bad { color: var(--bad); }
+.paused-banner { margin-top: 12px; padding: 12px 16px; border: 3px solid var(--accent); border-radius: 10px; }
+.paused-banner p { margin: 0 0 8px; }
+.resume-hint { color: var(--accent); font-weight: 700; min-height: 1.4em; }
+.helper-panel { margin-top: 16px; background: var(--panel-2); border-radius: 10px; padding: 10px 14px; }
+.helper-panel summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+.phrase-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.disclaimer { margin-top: 16px; }
+
+.setting { margin: 10px 0; }
+.setting output { font-family: ui-monospace, monospace; }
+
+/* No animation anywhere, but make that explicit for reduced-motion users. */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}

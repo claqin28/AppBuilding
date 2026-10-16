@@ -1,13 +1,19 @@
 /**
- * M1: camera + live blendshape debug view + setup checks.
- * Wires the camera, the face model, and the UI together. All the actual
- * logic lives in src/signal (pure functions) and src/vision (MediaPipe).
+ * App shell: navigation, the always-visible camera panel, and shared state.
+ * The real logic lives in src/signal and src/keyboard (pure, tested) and
+ * src/vision (camera + MediaPipe). Screens live in src/ui.
  */
 import "./styles.css";
-import { startCamera } from "./vision/camera";
-import { loadLandmarker, toDetection, type LoadedLandmarker } from "./vision/landmarker";
-import { checkLighting, checkPosition, faceBoxFromLandmarks, lumaStats } from "./signal/quality";
-import { DebugView } from "./ui/debugView";
+import { checkPosition, faceBoxFromLandmarks } from "./signal/quality";
+import type { Trace } from "./signal/trace";
+import type { AppContext, Screen, ScreenName } from "./ui/app";
+import { CalibrationScreen } from "./ui/calibrationScreen";
+import { ResultsScreen } from "./ui/resultsScreen";
+import { SettingsScreen } from "./ui/settingsScreen";
+import { SetupScreen } from "./ui/setupScreen";
+import { loadProfile, loadSettings, saveProfile, saveSettings } from "./ui/storage";
+import { TalkScreen } from "./ui/talkScreen";
+import { CameraTracker, ReplayTracker, type DetectionListener, type FrameSource } from "./vision/tracker";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -18,96 +24,140 @@ const faceEl = $("face-indicator");
 const positionEl = $("position-check");
 const lightingEl = $("lighting-check");
 const perfEl = $("perf");
-const showAll = $<HTMLInputElement>("show-all");
-const debug = new DebugView($("bars"));
+const replayLabel = $("replay-label");
+const screenRoot = $("screen");
+const navButtons = [...document.querySelectorAll<HTMLButtonElement>("nav [data-screen]")];
 
 /** MediaPipe's landmark index for the tip of the nose. */
 const NOSE_TIP = 1;
-/** Redraw the bars at most this often; the model can run faster than people can read. */
-const UI_INTERVAL_MS = 66;
-const LIGHT_INTERVAL_MS = 500;
+const STATUS_INTERVAL_MS = 100;
 
-// Small canvas used only to measure brightness. It never leaves this page.
-const lightCanvas = document.createElement("canvas");
-lightCanvas.width = 64;
-lightCanvas.height = 48;
-const lightCtx = lightCanvas.getContext("2d", { willReadFrequently: true })!;
+// Every screen subscribes here; detections from the current source are forwarded.
+const listeners = new Set<DetectionListener>();
+let sourceUnsub: (() => void) | null = null;
+let starting: Promise<boolean> | null = null;
 
-showAll.addEventListener("change", () => debug.setShowAll(showAll.checked));
-startBtn.addEventListener("click", start);
+const ctx: AppContext = {
+  source: null,
+  profile: loadProfile(),
+  settings: loadSettings(),
+  lastCalibration: null,
+  subscribe(fn) {
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  },
+  go: (name) => show(name),
+  ensureCamera() {
+    if (ctx.source) return Promise.resolve(true);
+    return (starting ??= startCamera().finally(() => (starting = null)));
+  },
+  useReplay(trace: Trace) {
+    const replay = new ReplayTracker(trace);
+    setSource(replay);
+    replay.start();
+    replayLabel.hidden = false;
+    startBtn.hidden = true;
+    notify("Replaying a recording. The camera is not being used.");
+  },
+  setProfile(p) {
+    ctx.profile = p;
+    if (!saveProfile(p)) notify("Couldn't save to this browser's storage. Your setup will be lost when you close the page.", true);
+  },
+  setSettings(s) {
+    ctx.settings = s;
+    saveSettings(s);
+  },
+  notify: (msg, isError) => notify(msg, isError),
+};
 
-async function start(): Promise<void> {
+function setSource(source: FrameSource): void {
+  ctx.source?.stop();
+  sourceUnsub?.();
+  ctx.source = source;
+  sourceUnsub = source.subscribe((det) => {
+    for (const fn of listeners) fn(det);
+  });
+}
+
+async function startCamera(): Promise<boolean> {
   startBtn.disabled = true;
   try {
-    setStatus("Loading the face model…");
-    const loaded = await loadLandmarker();
-    setStatus("Starting the camera…");
-    await startCamera(video);
-    setStatus(`Running. Face model is using the ${loaded.delegate}.`);
+    const cam = new CameraTracker(video);
+    await cam.start((msg) => notify(msg));
+    setSource(cam);
+    notify(`Camera running. Face model is using the ${cam.delegate}.`);
     startBtn.hidden = true;
-    runLoop(loaded);
+    return true;
   } catch (err) {
-    setStatus(err instanceof Error ? err.message : String(err), true);
+    notify(err instanceof Error ? err.message : String(err), true);
     startBtn.disabled = false;
+    return false;
   }
 }
 
-function runLoop({ landmarker }: LoadedLandmarker): void {
-  let lastVideoTime = -1;
-  let lastUi = 0;
-  let lastLight = 0;
-  let frames = 0;
-  let inferMs = 0;
-  let windowStart = performance.now();
-
-  const tick = (): void => {
-    const now = performance.now();
-    // Only run the model when the camera has produced a new frame.
-    if (video.currentTime !== lastVideoTime && video.readyState >= 2) {
-      lastVideoTime = video.currentTime;
-      const t0 = performance.now();
-      const det = toDetection(landmarker.detectForVideo(video, now), now);
-      inferMs += performance.now() - t0;
-      frames++;
-
-      if (now - lastUi >= UI_INTERVAL_MS) {
-        lastUi = now;
-        setCheck(faceEl, det.frame.face, det.frame.face ? "Face detected" : "No face detected");
-        if (det.landmarks) {
-          const box = faceBoxFromLandmarks(det.landmarks);
-          const pos = checkPosition(box, det.landmarks[NOSE_TIP].x);
-          setCheck(positionEl, pos.ok, pos.message);
-          debug.update(det.frame.scores);
-        } else {
-          setCheck(positionEl, false, "Position: waiting for a face");
-        }
-      }
-    }
-    if (now - lastLight >= LIGHT_INTERVAL_MS && video.readyState >= 2) {
-      lastLight = now;
-      lightCtx.drawImage(video, 0, 0, lightCanvas.width, lightCanvas.height);
-      const res = checkLighting(lumaStats(lightCtx.getImageData(0, 0, lightCanvas.width, lightCanvas.height).data));
-      setCheck(lightingEl, res.ok, res.message);
-    }
-    if (now - windowStart >= 1000) {
-      const fps = (frames * 1000) / (now - windowStart);
-      perfEl.textContent = `${fps.toFixed(0)} frames/s · model ${frames ? (inferMs / frames).toFixed(1) : "–"} ms/frame`;
-      frames = 0;
-      inferMs = 0;
-      windowStart = now;
-    }
-    requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
-}
-
-function setStatus(msg: string, isError = false): void {
+function notify(msg: string, isError = false): void {
   statusEl.textContent = msg;
   statusEl.classList.toggle("error", isError);
 }
+
+// ----- Screens ---------------------------------------------------------------
+
+let current: Screen | null = null;
+
+function show(name: ScreenName): void {
+  current?.unmount();
+  screenRoot.replaceChildren();
+  const make: Record<ScreenName, () => Screen> = {
+    setup: () => new SetupScreen(ctx),
+    calibrate: () => new CalibrationScreen(ctx),
+    results: () => new ResultsScreen(ctx),
+    talk: () => new TalkScreen(ctx),
+    settings: () => new SettingsScreen(ctx),
+  };
+  current = make[name]();
+  current.mount(screenRoot);
+  const navName = name === "results" ? "calibrate" : name;
+  for (const b of navButtons) {
+    if (b.dataset.screen === navName) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  }
+  screenRoot.focus();
+}
+
+for (const b of navButtons) b.addEventListener("click", () => show(b.dataset.screen as ScreenName));
+startBtn.addEventListener("click", () => void ctx.ensureCamera());
+
+// ----- Camera panel status (face, position, lighting) ------------------------
+
+let lastStatus = 0;
+ctx.subscribe((det) => {
+  if (det.frame.t - lastStatus < STATUS_INTERVAL_MS) return;
+  lastStatus = det.frame.t;
+  setCheck(faceEl, det.frame.face, det.frame.face ? "Face detected" : "No face detected");
+  if (det.landmarks) {
+    const pos = checkPosition(faceBoxFromLandmarks(det.landmarks), det.landmarks[NOSE_TIP].x);
+    setCheck(positionEl, pos.ok, pos.message);
+  } else if (ctx.source?.kind === "replay") {
+    setCheck(positionEl, true, "Position: not checked during replay");
+  } else {
+    setCheck(positionEl, false, "Position: waiting for a face");
+  }
+  const light = ctx.source?.lighting;
+  if (light) setCheck(lightingEl, light.ok, light.message);
+  else if (ctx.source?.kind === "replay") setCheck(lightingEl, true, "Lighting: not checked during replay");
+  const src = ctx.source;
+  if (src) {
+    perfEl.textContent =
+      src.kind === "camera"
+        ? `${src.fps.toFixed(0)} frames/s · model ${src.inferMs.toFixed(1)} ms/frame`
+        : `${src.fps.toFixed(0)} frames/s (replay)`;
+  }
+});
 
 function setCheck(el: HTMLElement, ok: boolean, msg: string): void {
   el.textContent = `${ok ? "✓" : "!"} ${msg}`;
   el.classList.toggle("ok", ok);
   el.classList.toggle("bad", !ok);
 }
+
+show(ctx.profile ? "talk" : "setup");

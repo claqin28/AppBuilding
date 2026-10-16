@@ -1,16 +1,81 @@
 # Face Gesture Control
 
-An assistive web app prototype that lets people with limited hand movement control a
-computer with facial movements seen by a webcam. It learns which movements *each
-person* can make reliably, instead of assuming everyone can make the same gestures.
+An assistive web app prototype for adults with limited or no hand and arm movement
+(for example high spinal cord injury, ALS, or muscular dystrophy) who can still make
+some voluntary facial movements. A webcam watches for small facial movements, and
+the person uses them to build a message on a scanning keyboard and speak it aloud.
 
-> **Status:** early prototype (M1: camera and live signal view). This is not a medical device.
+Its main idea: **it measures which movements each person can make reliably** instead
+of assuming everyone can smile, wink, or open their mouth on cue. Then it picks
+thresholds for that person.
+
+> **Status:** prototype. **Not a medical device.** It has **not** been tested with
+> anyone who has a motor impairment. So far it has been tested with synthetic data
+> and a still photo; testing with able-bodied volunteers is next, and results will be
+> reported here labeled as such.
+
+## Who it's for, and who it isn't for
+
+- **For** people who can't rely on speech: speech that's weak, tiring, or hard to
+  understand, or settings where speaking isn't possible or private.
+- **If someone's speech is reliable**, voice control (Voice Access on Android, Voice
+  Control on Apple devices) may well work better. This app doesn't replace it and
+  doesn't claim to beat it.
+- **Not an emergency system.** It can speak "I need help" aloud in the room, but it
+  cannot call anyone or alert anyone remotely.
+
+## What works now
+
+1. **Camera check:** live view of the 51 facial signals, a face-detected indicator,
+   and position and lighting checks in plain language.
+2. **Calibration (about 1–5 minutes):** rest, then natural movement (talking, looking
+   around), then 5 tries of each movement. For each movement, the app measures how far
+   it rises above rest, how consistent it is, how fast it is, and whether it
+   accidentally triggers other movements. It then picks the best 1–3 movements that
+   don't interfere with each other. A helper can override the choice.
+3. **Talk:** a row/column scanning keyboard (letters ordered by frequency), quick
+   phrases, and speech with an **on-device voice**. Auto-scan needs just one reliable
+   movement. Step-scan uses two or three. A pause mode stops scanning during
+   conversation, and resuming requires a deliberately long hold.
+4. **Recordings (traces):** calibration can be saved as numbers only (never images)
+   and replayed without a camera, for testing and re-analysis.
+
+Planned: an evaluation mode (false activations while talking, typing speed,
+personalized vs. fixed thresholds), drift and fatigue adaptation, practice games,
+and offline install (PWA).
+
+## Supported devices
+
+**Supported and tested target:** desktop Chrome on a laptop with its built-in webcam.
+
+iPad and Android browsers may work but are **untested**. This app makes no claim of
+mobile support until that's tested.
 
 ## Privacy
 
-All processing happens inside your browser tab. No video, images, or face data are sent
-anywhere or stored. The production build includes a Content-Security-Policy that blocks
-network requests to any other site.
+- All face processing happens inside your browser tab. No video, images, or face data
+  are sent anywhere or stored.
+- Text-to-speech uses **on-device voices only**. Chrome also offers "Google …" voices
+  that send text to Google's servers, so the app hides and never uses them.
+- No speech recognition is used. Chrome's version sends audio to a server.
+- Your gesture setup and settings are kept in this browser's local storage on this
+  device only, and Settings has a button to delete them.
+- **A Content-Security-Policy blocks all network requests to other sites,** in both
+  the dev server and production builds.
+
+### A finding about MediaPipe's logging
+
+The face model library, `@mediapipe/tasks-vision` 1.1.1, contains a usage logger.
+Every 60 seconds it tries to send usage statistics (which task is running, plus timing
+counters) to `https://odml.pa.googleapis.com/v1/log`. There is no public setting to
+turn it off. This app's Content-Security-Policy blocks the request. In a 70-second
+test with the camera running, the browser blocked it and **no request left the
+machine**. Inspecting the library's code, I found no image data in what it assembles,
+but I haven't independently decoded the payload.
+
+**Verify it yourself:** open Chrome DevTools, start the camera, and wait more than 60
+seconds. The **Console** shows a "Refused to connect … violates the Content Security
+Policy" error for that address. The **Network** tab shows no request to any other site.
 
 ## Setup
 
@@ -27,54 +92,42 @@ npm run preview    # serve the production build locally
 ## Architecture
 
 ```
-src/signal/   pure signal-processing code (no DOM, no camera), unit tested
-src/vision/   camera access and MediaPipe Face Landmarker
-src/ui/       screens and widgets
-public/       model file and wasm runtime (served locally, no CDN)
+src/signal/    pure signal processing (no DOM, no camera), unit tested
+  gestures.ts    candidate movements as formulas over blendshape scores
+  smoothing.ts   time-based exponential smoothing
+  detector.ts    hysteresis + minimum hold + refractory period, per gesture
+  engine.ts      runs the person's gestures together -> SELECT / NEXT / BACK
+  calibration.ts measures each movement for this person; picks thresholds
+  selection.ts   picks the best non-interfering set of 1-3 movements
+  explain.ts     turns numbers into plain sentences
+  trace.ts       record / save / load / replay facial-signal recordings
+  quality.ts     position and lighting checks
+src/keyboard/  scanning keyboard logic (pure, unit tested)
+src/vision/    camera access + MediaPipe Face Landmarker + replay source
+src/ui/        screens (camera check, calibrate, results, talk, settings)
+public/        model file + wasm runtime (served locally, no CDN)
 ```
 
-## What this can and can't do
+See `WALKTHROUGH.md` for how the main algorithms work and `DECISIONS.md` for why.
 
-This is a web page, so it can only control **itself**. Inside the page you get a
-scanning keyboard, text-to-speech, and copy-to-clipboard. It **cannot** click buttons
-in other apps or type into WhatsApp or email. Built-in operating-system tools can
-control the whole device:
+## Limitations
 
-| Tool | Platform | Gestures | Tuning |
-|---|---|---|---|
-| [Camera Switches](https://support.google.com/accessibility/android/answer/11150722) | Android | 6 fixed: look left/right/up, smile, raise eyebrows, open mouth | Gesture size dial and hold time, set by hand |
-| [Switch Control, Head Tracking](https://support.apple.com/en-qa/guide/iphone/iph8de250c54/ios) | iPhone, iPad, Mac | Head movement plus facial expressions | Set by hand per expression |
-| [Project Gameface](https://github.com/google/project-gameface) (archived Sept 2025) | Windows, Android | Any of 52 blendshapes | Per-gesture threshold, smoothing, hold time, set by hand |
+- Not tested with anyone who has a motor impairment.
+- Calibration thresholds and setup checks use rules of thumb that still need tuning
+  on real webcams and real people.
+- Facial signals come from a general-purpose model, and accuracy can vary with
+  lighting, glasses, facial hair, skin tone, and facial differences. That hasn't been
+  measured here.
+- A web page can only control itself. It can't operate other apps on the computer.
+- Head movements aren't used yet, though many people with high spinal cord injury
+  have good head control.
 
-None of these that I found **measure** which gestures a particular person can make
-reliably, check whether two gestures get confused with each other, or adapt as the
-person tires. Someone has to pick the gestures and tune them by trial and error. This
-app measures that. Its calibration results can also guide how to set up the built-in
-tools above.
+## Evaluation
 
-## Evaluation plan
-
-The goal is to answer "does this work for the person using it, without frustrating
-them?" Proving anything to anyone else isn't the goal.
-
-1. **Test on myself first, using recorded traces.** Every calibration and session can
-   be saved as a trace (numbers only, never video) and replayed. Settings can then be
-   tuned without asking anyone to repeat gestures.
-2. **False activations while talking (most important for real use).** Talk and look
-   around for 60 seconds. Count how often the app fires on its own. A tool that types
-   while someone is having a conversation won't get used.
-3. **Personalized vs. fixed thresholds.** Same gestures, same tasks, once with a
-   standard fixed threshold (0.5) and once with the calibrated thresholds. Alternate
-   the order (fixed, personal, personal, fixed) so practice doesn't favor one side.
-4. **Next-day check.** Does yesterday's calibration still work today, or does it need
-   redoing?
-5. **With the real user:** short sessions, stop at the first sign of tiredness or
-   frustration, and start with an easy success.
-
-Results from one or two people show how it works *for them*. They don't show it works
-for everyone with a given condition, and this README won't claim that.
-
-No results yet. This section will only ever contain numbers that were actually measured.
+No results yet. Unit tests (85) use **synthetic** data and only check that the code
+does what it was designed to do. They don't show that the app works for people. This
+section will only ever contain numbers that were actually measured, labeled with who
+they were measured on.
 
 ## Credits
 
