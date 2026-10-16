@@ -1,0 +1,25 @@
+{
+  "name": "face-gesture",
+  "version": "0.1.0",
+  "description": "Adaptive face-gesture control: an assistive web app",
+  "scripts": {
+    "predev": "node scripts/copy-wasm.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/copy-wasm.mjs",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@mediapipe/tasks-vision": "1.1.1"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.5"
+  },
+  "private": true,
+  "type": "module"
+}

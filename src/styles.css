@@ -1,0 +1,51 @@
+:root {
+  --bg: #0f1115;
+  --panel: #1a1d24;
+  --text: #f4f6fa;
+  --muted: #b8c0cc;
+  --accent: #ffd34d;
+  --ok: #5ee08a;
+  --bad: #ff8a7a;
+  --track: #2d323d;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 18px;
+  line-height: 1.4;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+header { padding: 16px 24px; border-bottom: 2px solid var(--track); }
+h1 { margin: 0 0 8px; font-size: 1.6rem; }
+h2 { margin: 0 0 4px; font-size: 1.2rem; }
+.privacy { margin: 0; color: var(--muted); }
+.privacy strong { color: var(--accent); }
+main { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr); gap: 24px; padding: 24px; }
+@media (max-width: 800px) { main { grid-template-columns: 1fr; padding: 16px; } }
+section { background: var(--panel); border-radius: 12px; padding: 16px; }
+.video-wrap { aspect-ratio: 4 / 3; background: #000; border-radius: 8px; overflow: hidden; }
+/* Mirror ONLY the on-screen preview, so it feels like a mirror. The frames
+   given to the model are not mirrored, so "left" in a blendshape name stays
+   the user's own left. */
+video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.big-button {
+  margin-top: 16px; min-height: 56px; padding: 12px 28px; font-size: 1.2rem; font-weight: 700;
+  background: var(--accent); color: #111; border: none; border-radius: 10px; cursor: pointer;
+}
+.big-button:disabled { opacity: 0.6; cursor: wait; }
+button:focus-visible, input:focus-visible { outline: 4px solid var(--text); outline-offset: 3px; }
+#status.error { color: var(--bad); font-weight: 700; }
+.checks { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 6px; }
+.checks li { padding: 6px 10px; border-radius: 6px; background: var(--track); }
+.checks li.ok { border-left: 6px solid var(--ok); }
+.checks li.bad { border-left: 6px solid var(--bad); }
+.perf { color: var(--muted); font-size: 0.85rem; }
+.hint { color: var(--muted); margin: 0 0 8px; }
+.toggle { display: inline-flex; gap: 8px; align-items: center; margin-bottom: 12px; cursor: pointer; }
+.toggle input { width: 22px; height: 22px; }
+.bars { display: grid; gap: 4px; }
+.bs-row { display: grid; grid-template-columns: 11em 1fr 3em; gap: 8px; align-items: center; font-size: 0.85rem; }
+.bs-row[hidden] { display: none; }
+.bs-name { font-family: ui-monospace, monospace; overflow: hidden; text-overflow: ellipsis; }
+.bs-track { height: 14px; background: var(--track); border-radius: 4px; overflow: hidden; }
+.bs-fill { display: block; height: 100%; width: 0; background: var(--accent); }
+.bs-value { font-family: ui-monospace, monospace; text-align: right; }
