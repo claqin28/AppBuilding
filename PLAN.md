@@ -34,7 +34,7 @@ What gets built, in what order, and what gets cut first. Reasons live in
 | M9 | Local share and export (message + progress report) | Planned |
 | M10 | Word prediction | Planned |
 | M6 | Adaptive practice games | Planned. **First to cut** |
-| M7 | Polish, offline install (PWA), public link | Planned. See the note on deploying early |
+| M7 | Polish, offline install (PWA), public link | Public link: in progress (GitHub Pages). Rest planned |
 
 (The new features are numbered M8–M10 so that M6 and M7 keep their original names.)
 
@@ -43,10 +43,10 @@ What gets built, in what order, and what gets cut first. Reasons live in
 Protect in this order: **M1–M4 → M5 → M8 + M9 → M10.** **M6 (practice games) is cut
 first.**
 
-*Recommendation, pending your OK:* M7 isn't in the priority list, but two of its
-pieces are small and unblock testing with volunteers: the **public HTTPS link**
-(GitHub Pages) and the **offline install**. I suggest doing those as soon as GitHub
-access works, and leaving the rest of M7's polish for the end.
+M7 isn't in the priority list. Its **public HTTPS link** (GitHub Pages) was pulled
+forward with the owner's OK (2026-10-16), so volunteers can test without installing
+anything. The **offline install (PWA)** is still a recommendation awaiting approval.
+The rest of M7's polish stays at the end.
 
 ---
 

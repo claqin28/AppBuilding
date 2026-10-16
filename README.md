@@ -9,6 +9,8 @@ Its main idea: **it measures which movements each person can make reliably** ins
 of assuming everyone can smile, wink, or open their mouth on cue. Then it picks
 thresholds for that person.
 
+**Try it:** https://claqin28.github.io/AppBuilding/ (desktop Chrome, laptop webcam).
+
 > **Status:** prototype. **Not a medical device.** It has **not** been tested with
 > anyone who has a motor impairment. So far it has been tested with synthetic data
 > and a still photo; testing with able-bodied volunteers is next, and results will be
@@ -64,6 +66,10 @@ mobile support until that's tested.
   device only, and Settings has a button to delete them.
 - **A Content-Security-Policy blocks all network requests to other sites,** in both
   the dev server and production builds.
+- **What the website host sees:** the app is served by GitHub Pages. Like any
+  website, GitHub receives standard request information (such as IP address and
+  browser type) when your browser downloads the app's files. It never receives
+  anything from the camera or anything you type, because the app sends nothing.
 - **Sharing and export only happen when you choose them,** and only locally: copy to
   the clipboard, download a file, or your device's share menu. Nothing is ever sent
   automatically or to a server. Today the only export is the calibration recording,
@@ -94,6 +100,10 @@ npm test           # unit tests
 npm run build      # production build in dist/
 npm run preview    # serve the production build locally
 ```
+
+**Publishing:** every push to `main` runs `.github/workflows/deploy-pages.yml`, which
+installs, runs the tests, builds, and publishes `dist/` to GitHub Pages. If a test
+fails, nothing is published.
 
 ## Architecture
 

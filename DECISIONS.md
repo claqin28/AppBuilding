@@ -201,3 +201,19 @@ of Talk); and a cap of about 12 phrases, since each row costs scan time.
 - Where the suggestion row goes involves a trade-off. At the top, it costs a scan step
   on every letter. At the bottom, it's slow to reach. Start with a top row of up to 4
   suggestions, then compare with the scan-step simulator before testing with people.
+
+## Public link on GitHub Pages (2026-10-16)
+
+- Approved by the project owner so volunteers can test from a link without installing.
+- **GitHub Actions builds and publishes** (`.github/workflows/deploy-pages.yml`) on each
+  push to `main`, rather than committing built files to a branch. Tests must pass
+  before publishing, and the site can never drift from the source. Actions are pinned
+  to their current major versions (checkout v7, setup-node v7, upload-pages-artifact
+  v5, deploy-pages v5).
+- **Only the two wasm variants the app can load** (SIMD and no-SIMD) are copied. The
+  "module" variant is only used with `useModule=true`, which this app doesn't use.
+  The deployed size dropped from 43 MB to 30 MB. Users download only one variant
+  (about 13 MB, plus the 3.7 MB model) on first load.
+- **The README states what the host sees:** GitHub receives normal request info (IP,
+  browser) when files are downloaded, like any website, but never camera data or text.
+- The CSP is a `<meta>` tag, so it works on GitHub Pages, which can't set custom headers.
