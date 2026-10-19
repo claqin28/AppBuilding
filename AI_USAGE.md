@@ -21,6 +21,10 @@ record of which parts were generated and which parts I decided or wrote.
   milestone order with a hardening pass; M4's three-condition comparison; the safety
   rules; the face visualization feature in two tiers; DEMO_CHECKLIST.md (I write
   the video script myself).
+- Plan update (2026-10-19): onboarding with guest and local-profile paths;
+  memory-only guest mode with a one-time report; IndexedDB profiles with history,
+  backups, and storage warnings; the 3D head (wireframe first, solid mesh only if
+  licenses allow); the new priority order.
 - _To fill in as I go: code I write or change myself, testing with my own webcam,
   results I collect, design decisions I make._
 
@@ -61,6 +65,14 @@ record of which parts were generated and which parts I decided or wrote.
 - Safety fix: auto-scan pauses when the face is lost (`src/ui/talkScreen.ts`,
   `Scanner.hold()` in `src/keyboard/scanner.ts`, plus a test).
 - Checks: a live test of MediaPipe's facial transformation matrix and mesh data.
+
+### Audit + plan update (2026-10-19)
+- An audit of M1–M4 and the hardening pass (re-ran all tests and the browser checks).
+- `PLAN.md` statuses and the new sections (G, V2a, P, V2b), the `DECISIONS.md` entry,
+  and `WALKTHROUGH.md` §6 (storage schema) and §7 (movement-map colors), written as
+  designs.
+- Checks: Three.js and MediaPipe licenses, MediaPipe's connection sets and triangle
+  data, and the left/right convention, all tested in code.
 
 ## Third-party code and assets (neither AI nor me)
 - `@mediapipe/tasks-vision` library and `face_landmarker.task` model, © Google, Apache-2.0.

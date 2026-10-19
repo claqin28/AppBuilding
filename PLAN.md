@@ -48,27 +48,41 @@ What gets built, in what order, and what gets cut first. Reasons live in
 
 ## Build order and status
 
+Audited 2026-10-19 by re-running every check on the current code (see DECISIONS).
+"Works" means verified in headless Chrome with a still photo or recorded data.
+**Nothing has been tested with a real moving face on a real webcam yet.**
+
 | Step | What | Status |
 |---|---|---|
-| M1 | Camera, live signals, setup checks, HTTPS deploy | ✅ Done (live on GitHub Pages) |
-| M2 | Calibration + gesture selection | ✅ Done (thresholds need real-data tuning) |
-| M3 | Control engine, scanning keyboard, speech | ✅ Done |
-| **R** | **Move the UI layer to React** (locked stack) | ⏭ **Next.** No behavior change; signal code untouched |
-| **V1** | **Face visualization Tier 1** (2D landmark overlay, mesh-only mode, per-gesture bars) | ⏭ With R (belongs to M1–M2) |
-| M4 | Evaluation mode (the technical result) | Planned |
-| H | Hardening pass (no new features) | Planned |
-| V2 | Face visualization Tier 2: 3D "movement map" | Planned |
-| M5 | Drift and fatigue adaptation | Planned |
+| M1 | Camera, live signals, setup checks, HTTPS deploy | 🟡 **Works, but not to spec:** UI isn't React yet; 2D overlay (V1) not built |
+| M2 | Calibration + gesture selection | 🟡 **Works on synthetic data and a photo.** Measures time-to-*fire*, not time-to-*peak* (small fix). Thresholds unvalidated on real faces |
+| M3 | Control engine, scanning keyboard, speech | 🟡 **Works.** Missing from the safety rules: always-visible tracking badge, pause keyboard shortcut, undo for Clear. **Speech has never been heard** (headless Chrome has no voices) |
+| **R** | **Move the UI layer to React** + the missing M3 safety items | ⏭ **Next** |
+| **V1** | Face visualization Tier 1 (2D overlay, mesh-only mode, per-gesture bars) | ⏭ With R |
+| M4 | Evaluation mode (the technical result) | ❌ **Not started** (only calibration time is logged) |
+| H | Hardening pass | ❌ **Not started** (done early: face-lost pause, no-face guard, CSP) |
+| M5 | Drift and fatigue adaptation | Planned. **Placement needs your decision** (see below) |
+| G | Onboarding + guest mode + one-time report | Planned |
+| V2a | 3D head, live wireframe/point cloud + movement-map colors | Planned |
+| P | Local profiles (IndexedDB) + history charts | Planned |
+| V2b | 3D head: solid shaded mesh upgrade | Planned |
 | M6 | Saved quick phrases | Planned (basics exist from M3) |
-| M7 | Local share/export + caregiver/OT progress report | Planned |
+| M7 | Message share/export (the report part moves into G and P) | Planned |
 | M8 | Word prediction | Planned |
 | M9 | Adaptive practice games | Planned. **First to cut** |
 | M10 | Polish + PWA install (PWA layer built last) | Planned |
 
-**If time gets tight, protect in this order:** M1–M4 + hardening → M5 → M6–M7 → M8 →
-M9. **M9 is cut first, before the face visualization.**
+**Order (owner's priority, 2026-10-19):** finish and verify M1–M4 and H first (R and
+V1 are part of finishing M1–M3 to the locked spec). Then **G → V2a → P → V2b**. Cut M9
+before any of these.
 
----
+**Needs your decision:** where M5 (drift) goes. Your earlier priority put it right
+after the hardening pass; the new list doesn't mention it. *Recommendation:* M4 → H →
+**M5** → G → V2a → P → V2b → M6–M8. Adapting as people tire is one of Tessera's three
+claimed contributions, and the reports and history need fatigue events.
+
+**If time gets tight, protect in this order:** M1–M4 + H → (M5) → G → V2a → P → V2b →
+M6–M7 → M8. **M9 is cut first.**
 
 ## R: Move the UI layer to React (next)
 
@@ -81,6 +95,11 @@ rewritten as React components. What stays the same:
   update React state at most ~10 times per second.
 - Every current behavior stays the same. Done when the existing end-to-end checks pass
   unchanged.
+- Also adds the missing M3 safety items:
+  - an always-visible tracking badge (Tracking / Paused / Calibrating / No face)
+  - a pause keyboard shortcut for helpers
+  - undo for "Clear all"
+- M2 fix: record time-to-peak as well as time-to-fire.
 
 ## V1: Face visualization, Tier 1 (with R)
 
@@ -122,28 +141,108 @@ rewritten as React components. What stays the same:
 - **A manual test checklist** for the deployed site, including a Network-tab check that
   nothing leaves the device.
 - A written list of what couldn't be verified.
+- **Multiple faces:** the model currently tracks one face (`numFaces: 1`), so it might
+  lock onto a second person who leans in. Plan: track up to 2 faces, and pause control
+  with a message whenever more than one face is visible.
 - Already done early: face lost → auto-scan pauses with a clear message (2026-10-16).
 
-## V2: Face visualization, Tier 2, the "movement map" (after M4 + H, before M6–M8)
+## G: Onboarding, guest mode, one-time report (after M4 + H)
 
-- A **3D face mesh** rendered with **Three.js** (MIT license, free). It's
-  **lazy-loaded**: the 3D code downloads only when someone turns the view on, and
-  it's served from this site like everything else.
-- **After calibration, face regions are colored by that person's measured
-  reliability and range,** using the real calibration numbers (hit rate, gap above
-  rest). Brow regions use brow raise and brow lowering, mouth corners use smile, and so
-  on. Every color also has a number and a legend, because color alone isn't
-  accessible.
-- **The facial transformation matrix helps** (checked 2026-10-16, see DECISIONS): it
-  gives head rotation and position, so its inverse can hold the mesh steady while the
-  head moves.
-- **Labeled on screen:** "Prototype visualization, not a medical or clinical assessment."
-- **Off switch:** a toggle turns the 3D view off. It also respects reduced motion (no
-  auto-rotation), never flashes, and renders only when its data changes.
-- **In the progress report only as an image the person chooses to export.**
+**Welcome screen, two paths:**
+- **"Try it now":** guest mode. Nothing is saved.
+- **"Save my progress on this device":** creates a local profile (a nickname only; see P).
+  Until P is built, this path is shown as "coming soon".
+
+**Onboarding steps (both paths), each skippable for returning profile users:**
+1. Privacy in plain language: the video never leaves the device, there's no account,
+   and there's no server.
+2. Why the camera is needed.
+3. Lighting and placement check (the existing camera check).
+4. Calibration.
+
+**Caregiver-assisted setup mode:** large targets, every step driven by big buttons,
+and no typing required anywhere (a profile nickname can be skipped or picked from
+suggestions).
+
+**Guest mode stores nothing.** Everything is held in memory only: no localStorage, no
+IndexedDB, no sessionStorage. That also means **reloading the page erases the session**,
+and the app says so. (This needs a storage layer that can turn writes off. Today the
+app always writes its settings and profile to localStorage.)
+
+**One-time report at the end of a guest session:**
+- A readable summary: calibration results, per-gesture reliability, evaluation metrics
+  (M4), and the 3D movement map as an image once V2a exists.
+- **Print to PDF** (a print stylesheet), **JSON**, and **CSV** downloads.
+- A clear notice: *"Closing this page erases this session unless you've downloaded
+  it."*
+- **"Save this session to a profile"** (once P exists).
+- **Excluded by default:** typed text and video (video is never stored anyway).
+  Including the current message text requires an explicit opt-in checkbox.
+
+The report generator is one module shared by guest reports, profile history exports,
+and M7. It's built once.
+
+## V2a: 3D head, live wireframe + movement map (after G)
+
+- **A 3D head built from the live Face Landmarker landmarks,** mirroring the person's
+  face in real time. It starts as a **wireframe or point cloud**.
+- **Data available (checked 2026-10-19, see DECISIONS):** `@mediapipe/tasks-vision`
+  1.1.1 (Apache-2.0) exports 478 landmarks with x, y, z; the connection sets for
+  tesselation, lips, eyes, eyebrows, irises, face oval, and contours; and the tesselation
+  edges, which form 852 triangles. Attribution goes in `ATTRIBUTION.md`.
+- **Head pose:** the facial transformation matrix can hold the head steady.
+- **After calibration, face regions are colored by the measured reliability or range**
+  (switchable), using the real calibration numbers. The mapping is in WALKTHROUGH §7.
+  - **Never color alone:** a legend with numbers, region labels, a text table of the
+    same numbers, and a colorblind-safe palette that also reads in grayscale.
+- **Rotate and zoom** with mouse or touch (Three.js OrbitControls, MIT, part of the
+  `three` package).
+- **Performance and safety:**
+  - Three.js (MIT, free) is **lazy-loaded** from this site.
+  - The render loop runs outside React (rAF + refs), throttled, and renders only when
+    something changes.
+  - GPU resources are released when the view closes.
+  - **WebGL is checked first;** if it's unavailable, a clear message replaces the view.
+  - There's an **off toggle**.
+  - Reduced motion is respected (no auto-rotate, no inertia), and nothing flashes.
+- **Labeled:** "Prototype visualization, not a medical or clinical assessment."
+- **Export only as an image the person chooses to export.** *Needs your decision:* see
+  DECISIONS on whether that image shows the person's real face shape or a generic one.
+- **The data-to-color logic is plain TypeScript with tests** (`src/signal/`), with no
+  Three.js or React imports.
 - **No rigged avatar.**
-- The pure parts (gesture → face-region mapping, region scores, colors) live in
-  `src/signal/` with tests, with no Three.js imports.
+
+## P: Local profiles and history (after V2a)
+
+- **Not a server account.** A profile is a nickname stored only in this browser's
+  IndexedDB. No email, no password, no network.
+- **Profile control in the top corner:**
+  - switch profile and view history
+  - export or import a JSON backup
+  - delete this profile, or delete all data
+- **Stored per profile:**
+  - session dates and calibration results over time
+  - per-gesture reliability trends
+  - fatigue events, false activations per minute, typing speed, calibration time
+  - settings and the current gesture setup
+- **History view** with charts drawn as plain SVG (no chart library).
+- **Versioned schema with migrations, and storage caps** (WALKTHROUGH §6).
+- **Storage warnings:**
+  - when storage is unavailable or may not last (private browsing, or the browser
+    refuses persistence)
+  - that clearing browser data erases profiles, with a recommendation to export a
+    backup
+- **Honest limits, stated in the UI:**
+  - Profiles aren't protected from other people who use the same browser.
+  - Private browsing can't be detected reliably, so the warning is based on signs
+    like refused persistence and a small quota.
+- Reports exclude typed text and video by default. Text requires an opt-in.
+
+## V2b: 3D head, solid shaded mesh (after P)
+
+The license check passed (Apache-2.0 triangle data, see V2a), so a solid shaded mesh is
+allowed. It uses the 852 triangles from the package's tesselation. Triangle winding
+(which side faces out) hasn't been checked yet, so the first version renders both sides.
 
 ## M5: Drift and fatigue adaptation
 
@@ -171,7 +270,8 @@ To do:
   - **Share…** is a helper-clicked button only, because the Web Share API requires a
     real click and a face gesture doesn't count. It's hidden where the browser doesn't
     support it.
-- **(b) Progress report:**
+- **(b) Progress report:** *now built once in G (guest) and P (profiles); M7 keeps the
+  message-sharing part.*
   - A readable summary plus JSON/CSV: per-gesture reliability over time, calibration
     time, false activations per minute, typing speed, error rate, and fatigue events.
   - **Excluded by default:** typed text, video (never stored), raw recordings, and

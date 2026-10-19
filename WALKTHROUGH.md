@@ -273,3 +273,128 @@ with prediction on and off, not just keystroke savings.
 size? What does λ do, and why does it grow gradually instead of switching straight to
 personal words? How can 60% keystroke savings still fail to make typing faster? Why
 is the learned word list kept out of the progress report by default?
+
+---
+
+## 6. Storage schema for local profiles (planned: design, not built yet)
+
+Planned for step P (`PLAN.md`). This will be updated to match the real code.
+
+**Where:** IndexedDB, the browser's built-in database. It lives only in this browser on
+this device. There's no server, so there's nothing to log in to. A profile is just a
+nickname.
+
+**Database `tessera`, schema version 1. Four "object stores" (tables):**
+
+| Store | Key | What one record holds |
+|---|---|---|
+| `meta` | `"schema"` | `{ schemaVersion, createdAt }` |
+| `profiles` | `id` (random, made on this device) | `{ id, nickname, createdAt, updatedAt, settings, controlSetup }`: `controlSetup` is the gesture→action bindings and thresholds |
+| `sessions` | `id`, indexed by `[profileId, startedAt]` | `{ id, profileId, startedAt, endedAt, calibration?, evaluation?, fatigueEvents[] }` |
+| `words` (M8) | `[profileId, word]` | `{ count }`: the learned word frequencies |
+
+- `calibration` = `{ durationMs, chosen[], gestures: [{ id, hitRate, auc, gap, restLevel, typicalPeak, on, off, reactionMs, usable }] }`.
+  These are *summary numbers*, not recordings.
+- `evaluation` = `{ condition, idleFalsePerMin, charsPerMin, errorRate }` (from M4).
+
+**Never stored:** video, frames, images, face landmarks (face shape), raw recordings
+(those are only downloaded by choice), and typed messages.
+
+**Why summaries instead of recordings?** A 5-minute calibration recording (51 signals, 30 times a second) is several
+megabytes. Its summary is about 2 KB. History charts only need the summaries, and summaries reveal
+less about the person.
+
+**Caps.** At most 20 profiles, and at most 500 sessions per profile. When a profile
+passes the cap, the oldest sessions are dropped, and the app warns first.
+`navigator.storage.estimate()` shows how much space is used, and the app warns before
+the browser's limit gets close.
+
+**Versioned schema with migrations.** Every record carries the schema version it was
+written with. When the app updates and the schema changes (say, version 2 adds a field),
+a **migration** function upgrades old records step by step: v1 → v2 → v3. Each
+migration is a pure function, `(oldRecord) => newRecord`, so it can be unit tested
+without a browser. The same migrations run when you **import a backup** made by an
+older version.
+
+**Backup file format:**
+`{ format: "tessera-backup", schemaVersion, exportedAt, profile, sessions[], words[] }`.
+It's downloaded only when the person clicks Export. Import checks the format, migrates
+the data, and asks before overwriting anything.
+
+**Storage that might not last.** The app asks the browser to keep its data
+(`navigator.storage.persist()`). If the browser says no, if storage fails to open, or
+if the quota is unusually small (a common sign of private browsing), the app warns:
+*"This browser may erase your profile when it closes. Export a backup."* Private
+browsing can't be detected for certain, so the wording says *may*.
+
+**Guest mode uses none of this.** Its data lives only in the page's memory, so closing
+or reloading the tab erases it.
+
+**Questions:** Why store summaries instead of recordings? What's a migration, and why
+must each one be a pure function? Why can't the app promise to detect private browsing?
+Who *can* see a local profile? (Anyone using the same browser on the same computer.)
+
+---
+
+## 7. Movement-map colors: from calibration numbers to face regions (planned)
+
+Planned for V2a (`PLAN.md`). The logic will be plain TypeScript in `src/signal/`, with
+no Three.js or React, so it can be unit tested.
+
+**Step 1: regions.** The face is divided into named regions. Each region is a set of
+landmark numbers, mostly taken from MediaPipe's own connection sets:
+- the left eye and left eyebrow come from `FACE_LANDMARKS_LEFT_EYE` and
+  `FACE_LANDMARKS_LEFT_EYEBROW`
+- the right eye and eyebrow come from the matching `RIGHT_` sets
+- the lips come from `FACE_LANDMARKS_LIPS`
+- the jaw and chin come from the lower part of `FACE_LANDMARKS_FACE_OVAL`
+- the cheeks get hand-picked landmark sets, chosen and checked at build time
+
+"Left" means the **person's own left**. I checked this on a test photo (2026-10-19):
+MediaPipe's `LEFT_EYE` set sits on the person's left, matching `eyeBlinkLeft`.
+
+**Step 2: which gestures belong to which region.**
+
+| Gesture | Region(s) |
+|---|---|
+| Raise eyebrows, Frown | left eyebrow + right eyebrow |
+| Close left eye / right eye | left eye / right eye |
+| Smile, Pucker, Lips left/right | lips |
+| Open mouth | lips + jaw/chin |
+| Jaw left/right | jaw/chin |
+| Puff cheeks | cheeks |
+
+**Step 3: one number per gesture.** The person picks what to show:
+- **Reliability** = the hit rate from calibration (0–100%).
+- **Range** = how far above rest a typical try reaches, as a share of a "fully strong"
+  movement: `min(1, gap ÷ 0.30)` (0–100%).
+
+**Step 4: one number per region** = the **highest** value among that region's tested
+gestures. This answers: *"What's the best way this person can use this part of their
+face?"* The label still lists every gesture separately, for example
+*"Lips: Smile 100%, Pucker 40%"*. A region with no tested gesture is **"not tested"**,
+shown in neutral gray. That's different from tested-but-weak, which shows as a low
+value.
+
+**Step 5: number → color.** Values go into **5 bins** (0–20%, 20–40%, … 80–100%). Each
+bin gets one color from a sequential palette that:
+- gets steadily lighter as values rise, so it still reads in black-and-white
+- stays distinguishable for common color-vision deficiencies (checked with a simulator
+  when it's built)
+
+**Never color alone:** the legend shows the bin numbers, regions get text labels, and
+a table beside the head lists every number.
+
+*Example (made-up numbers):* "Close left eye" had a hit rate of 100%, so the left eye
+region is in the top bin. "Close right eye" was skipped, so the right eye is gray and
+says "not tested". Smile was 100% and Pucker 40%, so the lips show 100% and the label
+lists both.
+
+**Step 6: region → mesh.** Every landmark (vertex) in a region gets that region's
+color. Landmarks outside all regions get a neutral face color. This produces one plain
+list of colors that the 3D code just displays. All the deciding happens in the
+testable module.
+
+**Questions:** Why use the highest gesture value for a region instead of the average?
+Why is "not tested" different from 0%? Why bins instead of a smooth color gradient?
+How is the map still readable for someone who can't tell red from green?

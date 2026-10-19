@@ -46,9 +46,10 @@ thresholds for that person.
 
 Planned (see `PLAN.md` for order and status): an evaluation mode (false activations
 while talking, typing speed, personalized vs. fixed thresholds), drift and fatigue
-adaptation, an editable quick-phrase list, local share/export (message and a progress
-report for a caregiver or therapist), word prediction, practice games, and offline
-install (PWA).
+adaptation, onboarding with a guest mode that saves nothing, a one-time report,
+optional local profiles stored only in this browser, a 3D "movement map" of the face
+(a prototype visualization, not a clinical assessment), an editable quick-phrase list,
+local share/export, word prediction, practice games, and offline install (PWA).
 
 ## Supported devices
 

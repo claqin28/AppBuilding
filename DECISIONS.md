@@ -303,3 +303,93 @@ accurate. It already says voice control may be better for people with reliable s
 
 **DEMO_CHECKLIST.md added:** what the 3-minute video should show, as a checklist, not a
 script.
+
+## Audit + plan update: onboarding, guest mode, local profiles, 3D head (2026-10-19)
+
+**Audit method:** re-ran everything on the current code.
+- Unit tests (86 pass), typecheck, and build all pass, and GitHub's `main` matches local.
+- The last 2 deploys succeeded.
+- Five headless-Chrome checks pass:
+  1. a replayed synthetic calibration → save → step-scan typing produced the expected
+     letter
+  2. face lost for 6 s → scanning paused
+  3. no face → calibration refuses to start
+  4. the real calibration flow through a fake camera playing a still photo, with Skip
+  5. production build, camera on for 70 s → MediaPipe's logger blocked, zero outgoing
+     requests
+
+The table in `PLAN.md` records each milestone's status.
+
+**Gaps found by the audit:**
+- The UI isn't React yet (plan step R).
+- M2 reports time-to-*fire*, not time-to-*peak*.
+- M3 is missing: an always-visible tracking badge, a pause keyboard shortcut, and undo
+  for Clear.
+- `numFaces: 1` means a second person leaning in could be tracked instead (added to H).
+- Speech output has never actually been heard, because headless Chrome has no voices.
+- **M4 is not started. The hardening pass is not started** (except face-lost pause,
+  the no-face guard, and the CSP).
+- The browser checks are scratch scripts outside the repo, so they can't be reproduced
+  from the repo yet. H moves them in as replay regression tests.
+
+**Order:** the owner's new priority is M1–M4 + H, then G (guest report) → V2a
+(wireframe head) → P (profiles) → V2b (solid mesh), with M9 cut first. Open question:
+where M5 goes (recommendation: right after H). The progress-report part of M7 merges
+into G/P as one shared report module.
+
+**Guest mode is memory-only.** It uses no localStorage, sessionStorage, or IndexedDB,
+so a reload erases it too, and the UI says so. This needs a storage layer that can
+turn writes off, since the current code always writes to localStorage. The browser's
+own memory of the camera permission isn't app data, and isn't affected.
+
+**Local profiles (IndexedDB), with honest limits.**
+- They're **not protected from other people using the same browser.** There's no
+  server, so a password could only be checked locally, which would protect little and
+  could lock out the owner. The UI states this instead of implying privacy it doesn't
+  have.
+- Private browsing **can't be detected reliably**, so warnings are based on signs
+  (refused `navigator.storage.persist()`, a failed open, an unusually small quota) and
+  say "may be erased".
+- Only **summary numbers** are stored. Raw recordings, landmarks, typed messages, and
+  video are never stored (WALKTHROUGH §6).
+- Each migration is a pure function, so it's testable.
+- Charts are plain SVG, with no chart library (keeps dependencies minimal).
+
+**3D head: verified data and licenses (2026-10-19).** The official docs site was
+unreachable from the dev environment again, so I checked these directly:
+- **Connection sets in `@mediapipe/tasks-vision` 1.1.1 (Apache-2.0):** `LIPS`,
+  `LEFT/RIGHT_EYE`, `LEFT/RIGHT_EYEBROW`, `LEFT/RIGHT_IRIS`, `FACE_OVAL`, `CONTOURS`,
+  `TESSELATION`. Read from the package types and listed at runtime.
+- **Triangulation is available:** the 2,556 tesselation edges are exactly **852
+  triangles**. Every group of 3 consecutive edges closes into a triangle; checked in
+  code. The highest index is 467, so the triangles cover the 468 face landmarks (not
+  the 10 iris points).
+- **Separately, MediaPipe's repo** (google-ai-edge/mediapipe, Apache-2.0, `BUILD` says
+  `licenses(["notice"])`) has `canonical_face_model.obj` (468 vertices, 898 triangles)
+  and `face_model_with_iris.obj` (478 vertices, 906 triangles). This is a *different*
+  triangulation: 434 triangles are shared with the package's 852. That overlap strongly
+  suggests the same vertex numbering as the landmarks, but it isn't proven.
+- **Decision:** use the package's 852 triangles. They're already in a dependency, so no
+  extra file is needed. **A solid mesh is allowed** (Apache-2.0 is compatible).
+  Triangle winding is unchecked, so the first version renders both sides.
+- **Left/right:** MediaPipe's `LEFT_EYE` / `LEFT_EYEBROW` sets sit on the person's own
+  left (on a test photo, their x positions fell on the image's right in the unmirrored
+  frame). That matches `eyeBlinkLeft`. Checked on one frontal photo only.
+- **Three.js:** version 0.186.1, MIT. OrbitControls comes inside the same package.
+  Both are added to `ATTRIBUTION.md` when built.
+
+**Movement map: real face shape vs. generic face (needs owner decision).** The new spec
+says to render from the person's live landmarks, so the live view uses their real face
+shape, in memory only. The open question is the **exported image.** A wireframe of
+someone's real face shape is more identifying than the colored numbers it carries.
+*Recommendation:* export on the generic canonical face by default, with an option to
+export the real shape. Until decided, the export uses the generic face.
+
+**Color mapping (WALKTHROUGH §7):**
+- Reliability or range is shown one at a time, never mixed into one color.
+- A region's value is the highest value among its gestures, and the labels list each
+  gesture separately.
+- "Not tested" is gray, which is different from 0%.
+- 5 bins from a sequential palette that gets lighter as values rise and is checked for
+  color-vision deficiency.
+- There's always a legend, labels, and a numbers table.
