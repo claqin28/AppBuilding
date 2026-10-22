@@ -11,7 +11,7 @@
  * so nothing is fetched from a CDN.
  */
 import { FaceLandmarker, FilesetResolver, type FaceLandmarkerResult } from "@mediapipe/tasks-vision";
-import type { BlendshapeFrame, Point2 } from "../signal/types";
+import type { BlendshapeFrame, Point3 } from "../signal/types";
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -44,17 +44,21 @@ export async function loadLandmarker(): Promise<LoadedLandmarker> {
 /** What we keep from one MediaPipe result: the blendshape frame plus the landmarks for setup checks. */
 export interface Detection {
   frame: BlendshapeFrame;
-  landmarks: Point2[] | null;
+  /** 478 points, x/y from 0 to 1 across the image, z = depth on the same scale as x. */
+  landmarks: Point3[] | null;
+  /** Camera image size in pixels (needed to keep the face's proportions in 3D). */
+  imageWidth: number;
+  imageHeight: number;
 }
 
-export function toDetection(result: FaceLandmarkerResult, t: number): Detection {
+export function toDetection(result: FaceLandmarkerResult, t: number, imageWidth = 0, imageHeight = 0): Detection {
   const shapes = result.faceBlendshapes[0];
   const landmarks = result.faceLandmarks[0] ?? null;
-  if (!shapes || !landmarks) return { frame: { t, face: false, scores: {} }, landmarks: null };
+  if (!shapes || !landmarks) return { frame: { t, face: false, scores: {} }, landmarks: null, imageWidth, imageHeight };
   const scores: Record<string, number> = {};
   for (const c of shapes.categories) {
     // "_neutral" is a model-internal category, not a facial movement.
     if (c.categoryName !== "_neutral") scores[c.categoryName] = c.score;
   }
-  return { frame: { t, face: true, scores }, landmarks };
+  return { frame: { t, face: true, scores }, landmarks, imageWidth, imageHeight };
 }

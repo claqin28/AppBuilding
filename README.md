@@ -41,7 +41,13 @@ thresholds for that person.
    conversation, and resuming requires a deliberately long hold. **If the camera
    loses your face, control pauses and says so;** nothing can be selected until you're
    back in view.
-4. **Recordings (traces):** calibration can be saved as numbers only (never images)
+4. **Face map (prototype):** a 3D wireframe head, either live from the camera or a
+   standard face, colored by your calibration's reliability or range. It has labels,
+   a legend, and a numbers table, and you can rotate and zoom. It can export an image
+   (always the standard face, never your own face shape). There's an off switch, and
+   the 3D code downloads only when used. *Prototype visualization, not a medical or
+   clinical assessment.*
+5. **Recordings (traces):** calibration can be saved as numbers only (never images)
    and replayed without a camera, for testing and re-analysis.
 
 Planned (see `PLAN.md` for order and status): an evaluation mode (false activations
@@ -121,6 +127,8 @@ src/signal/    pure signal processing (no DOM, no camera), unit tested
   explain.ts     turns numbers into plain sentences
   trace.ts       record / save / load / replay facial-signal recordings
   quality.ts     position and lighting checks
+  movementMap.ts calibration numbers -> face-region colors (for the 3D map)
+src/viz/       3D face map: regions, standard face data, Three.js renderer (lazy-loaded)
 src/keyboard/  scanning keyboard logic (pure, unit tested)
 src/vision/    camera access + MediaPipe Face Landmarker + replay source
 src/ui/        screens (camera check, calibrate, results, talk, settings)
@@ -143,7 +151,7 @@ See `WALKTHROUGH.md` for how the main algorithms work and `DECISIONS.md` for why
 
 ## Evaluation
 
-No results yet. Unit tests (85) use **synthetic** data and only check that the code
+No results yet. Unit tests (115) use **synthetic** data and only check that the code
 does what it was designed to do. They don't show that the app works for people. This
 section will only ever contain numbers that were actually measured, labeled with who
 they were measured on.

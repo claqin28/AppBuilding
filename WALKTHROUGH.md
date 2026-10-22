@@ -336,22 +336,29 @@ Who *can* see a local profile? (Anyone using the same browser on the same comput
 
 ---
 
-## 7. Movement-map colors: from calibration numbers to face regions (planned)
+## 7. Movement-map colors: from calibration numbers to face regions
 
-Planned for V2a (`PLAN.md`). The logic will be plain TypeScript in `src/signal/`, with
-no Three.js or React, so it can be unit tested.
+Built 2026-10-22 (step V2a). The logic is plain TypeScript in
+`src/signal/movementMap.ts` (no Three.js, no React) and is unit tested in
+`tests/movementMap.test.ts`. The regions are in `src/viz/faceRegions.ts`.
 
-**Step 1: regions.** The face is divided into named regions. Each region is a set of
-landmark numbers, mostly taken from MediaPipe's own connection sets:
-- the left eye and left eyebrow come from `FACE_LANDMARKS_LEFT_EYE` and
-  `FACE_LANDMARKS_LEFT_EYEBROW`
-- the right eye and eyebrow come from the matching `RIGHT_` sets
-- the lips come from `FACE_LANDMARKS_LIPS`
-- the jaw and chin come from the lower part of `FACE_LANDMARKS_FACE_OVAL`
-- the cheeks get hand-picked landmark sets, chosen and checked at build time
+**Step 1: regions.** The face is split into 8 named regions. Each is a list of
+landmark numbers (MediaPipe numbers 468 face points the same way every time):
+- **Eyes, eyebrows, lips** come straight from MediaPipe's own connection sets
+  (`FACE_LANDMARKS_LEFT_EYE`, `..._LEFT_EYEBROW`, `..._LIPS`, and the `RIGHT_`
+  versions).
+- **Jaw and chin** = every point lower than the lowest lip point.
+- **Left and right cheek** = points between the mouth corners and the bottom of the
+  eyes, further out to the side than the mouth corners, split by side.
 
-"Left" means the **person's own left**. I checked this on a test photo (2026-10-19):
-MediaPipe's `LEFT_EYE` set sits on the person's left, matching `eyeBlinkLeft`.
+The cheek and jaw lines are measured from the other regions on MediaPipe's
+*standard face*, not typed in as numbers. Tests check that every region has points,
+that no point is in two regions, that the left regions really are on the person's
+left, and that the regions are stacked in the right order from top to bottom.
+
+"Left" always means the **person's own left**. I checked this twice: on a test photo,
+MediaPipe's `LEFT_EYE` sits on the person's left, and on the standard face the person's
+left is +x.
 
 **Step 2: which gestures belong to which region.**
 
@@ -362,39 +369,53 @@ MediaPipe's `LEFT_EYE` set sits on the person's left, matching `eyeBlinkLeft`.
 | Smile, Pucker, Lips left/right | lips |
 | Open mouth | lips + jaw/chin |
 | Jaw left/right | jaw/chin |
-| Puff cheeks | cheeks |
+| Puff cheeks | left cheek + right cheek |
 
-**Step 3: one number per gesture.** The person picks what to show:
-- **Reliability** = the hit rate from calibration (0–100%).
-- **Range** = how far above rest a typical try reaches, as a share of a "fully strong"
-  movement: `min(1, gap ÷ 0.30)` (0–100%).
+**Step 3: one number per gesture.** The person picks which number to show:
+- **Reliability** = the calibration hit rate (0–100%), **except** that a movement
+  calibration rejected as *too small* or *looking like resting/talking* shows **0%**.
+  Why: a movement that barely moves can "hit" a threshold buried in the noise every
+  time, so its hit rate says 100% for something that doesn't really work. The first
+  version had exactly this bug. The browser test showed "Jaw to your left 100% (not
+  reliable)", and a unit test now guards against it.
+- **Range** = how far above rest a typical try reached, as a share of a "fully
+  strong" movement: `min(1, gap ÷ 0.30)`.
 
 **Step 4: one number per region** = the **highest** value among that region's tested
-gestures. This answers: *"What's the best way this person can use this part of their
-face?"* The label still lists every gesture separately, for example
-*"Lips: Smile 100%, Pucker 40%"*. A region with no tested gesture is **"not tested"**,
-shown in neutral gray. That's different from tested-but-weak, which shows as a low
-value.
+gestures. That answers "what's the best way this person can use this part of their
+face?" The table and labels still list every gesture separately, for example
+*"Lips: 100% (Smile 100%, Open mouth 0%)"*. A region with no tested gesture is
+**"not tested"** (gray). That's different from tested-and-weak, which shows as 0%.
 
-**Step 5: number → color.** Values go into **5 bins** (0–20%, 20–40%, … 80–100%). Each
-bin gets one color from a sequential palette that:
-- gets steadily lighter as values rise, so it still reads in black-and-white
-- stays distinguishable for common color-vision deficiencies (checked with a simulator
-  when it's built)
+**Step 5: number → color.**
+- **5 bins:** 0–20%, 20–40%, 40–60%, 60–80%, 80–100%.
+- **The colors:** `#1c5cab` → `#2a78d6` → `#5598e7` → `#86b6ef` → `#b7d3f6`, one blue
+  that gets **lighter as values rise**, so it still reads in black-and-white. It
+  passed a palette checker (the dataviz validator, against this app's dark
+  background):
+  - lightness changes in one direction only
+  - every step is visibly different from the next
+  - the darkest step still stands out from the background (2.85:1)
+- **Other colors:** gray `#7b818c` means "not tested", and darker gray `#3d4350` is
+  the rest of the face.
+- **Never color alone:** the head has text labels with numbers, plus a legend and a
+  table of every number.
 
-**Never color alone:** the legend shows the bin numbers, regions get text labels, and
-a table beside the head lists every number.
+**Step 6: region → points.** `pointColors()` returns one color per face point. The 3D
+view (`src/viz/head3d.ts`) just displays that list. All the deciding happens in the
+tested module.
 
-*Example (made-up numbers):* "Close left eye" had a hit rate of 100%, so the left eye
-region is in the top bin. "Close right eye" was skipped, so the right eye is gray and
-says "not tested". Smile was 100% and Pucker 40%, so the lips show 100% and the label
-lists both.
-
-**Step 6: region → mesh.** Every landmark (vertex) in a region gets that region's
-color. Landmarks outside all regions get a neutral face color. This produces one plain
-list of colors that the 3D code just displays. All the deciding happens in the
-testable module.
+**The two face shapes:**
+- **Live** = the person's own landmarks, redrawn up to 20 times a second. The head
+  turns as they turn, like a mirror.
+- **Standard** = MediaPipe's standard face. **Exported images always use the standard
+  face and the front view,** so an exported image never contains someone's real face
+  shape. I verified that the standard face numbers its points the same way as the
+  live landmarks: on a test photo, the distance patterns between points matched with
+  a correlation of 0.98, versus about 0 when the numbering was shuffled.
 
 **Questions:** Why use the highest gesture value for a region instead of the average?
-Why is "not tested" different from 0%? Why bins instead of a smooth color gradient?
-How is the map still readable for someone who can't tell red from green?
+Why is "not tested" different from 0%? Why does a too-small movement show 0%
+reliability even if its hit rate was 100%? Why bins instead of a smooth color
+gradient? How is the map still readable for someone who can't tell colors apart? Why
+does the exported image use the standard face?

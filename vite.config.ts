@@ -44,4 +44,9 @@ export default defineConfig({
   // Relative base so the build works under a sub-path (e.g. GitHub Pages /repo-name/).
   base: "./",
   plugins: [cspPlugin()],
+  build: {
+    // Three.js (~550 kB) is in its own file, downloaded only when the 3D view is
+    // turned on, so its size doesn't slow down the rest of the app.
+    chunkSizeWarningLimit: 600,
+  },
 });

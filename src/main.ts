@@ -8,6 +8,7 @@ import { checkPosition, faceBoxFromLandmarks } from "./signal/quality";
 import type { Trace } from "./signal/trace";
 import type { AppContext, Screen, ScreenName } from "./ui/app";
 import { CalibrationScreen } from "./ui/calibrationScreen";
+import { FaceMapScreen } from "./ui/faceMapScreen";
 import { ResultsScreen } from "./ui/resultsScreen";
 import { SettingsScreen } from "./ui/settingsScreen";
 import { SetupScreen } from "./ui/setupScreen";
@@ -112,6 +113,7 @@ function show(name: ScreenName): void {
     calibrate: () => new CalibrationScreen(ctx),
     results: () => new ResultsScreen(ctx),
     talk: () => new TalkScreen(ctx),
+    facemap: () => new FaceMapScreen(ctx),
     settings: () => new SettingsScreen(ctx),
   };
   current = make[name]();

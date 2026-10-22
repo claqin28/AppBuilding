@@ -63,7 +63,7 @@ Audited 2026-10-19 by re-running every check on the current code (see DECISIONS)
 | H | Hardening pass | ❌ **Not started** (done early: face-lost pause, no-face guard, CSP) |
 | M5 | Drift and fatigue adaptation | Planned. **Placement needs your decision** (see below) |
 | G | Onboarding + guest mode + one-time report | Planned |
-| V2a | 3D head, live wireframe/point cloud + movement-map colors | Planned |
+| V2a | 3D head, live wireframe/point cloud + movement-map colors | ✅ **First version built (2026-10-22),** moved ahead of M4 by the owner. Tested in headless Chrome only |
 | P | Local profiles (IndexedDB) + history charts | Planned |
 | V2b | 3D head: solid shaded mesh upgrade | Planned |
 | M6 | Saved quick phrases | Planned (basics exist from M3) |
@@ -75,6 +75,10 @@ Audited 2026-10-19 by re-running every check on the current code (see DECISIONS)
 **Order (owner's priority, 2026-10-19):** finish and verify M1–M4 and H first (R and
 V1 are part of finishing M1–M3 to the locked spec). Then **G → V2a → P → V2b**. Cut M9
 before any of these.
+
+**Change (2026-10-22, owner's decision):** V2a, the 3D head, was built *before* M4 so
+the owner could see it first. Volunteer testing for M4 comes after. **Next:** R + V1,
+then M4.
 
 **Needs your decision:** where M5 (drift) goes. Your earlier priority put it right
 after the hardening pass; the new list doesn't mention it. *Recommendation:* M4 → H →
@@ -118,6 +122,8 @@ rewritten as React components. What stays the same:
 
 - (a) **60-second idle test:** talk and look around; count false activations per minute.
 - (b) **Fixed-phrase typing:** characters per minute and error rate.
+- **Decided 2026-10-22:** the 8 test phrases (written by the owner) and the Default
+  gestures are in `src/evaluation/setup.ts`.
 - (c) **Three conditions, all reported honestly even if Tessera doesn't win:**
   1. **Default:** fixed gestures with fixed default thresholds.
   2. **Hand-tuned:** the same fixed gestures, with thresholds the person sets once

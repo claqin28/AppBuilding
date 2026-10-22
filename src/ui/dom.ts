@@ -44,6 +44,14 @@ export function downloadText(filename: string, text: string, type = "application
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/** Saves an image (or other data URL) as a file on this device. Nothing is uploaded. */
+export function downloadDataUrl(filename: string, dataUrl: string): void {
+  const a = h("a", { href: dataUrl, download: filename });
+  document.body.append(a);
+  a.click();
+  a.remove();
+}
+
 /** Lets the user pick a file from this device and returns its text. */
 export function pickTextFile(accept = ".json,application/json"): Promise<string | null> {
   return new Promise((resolve) => {

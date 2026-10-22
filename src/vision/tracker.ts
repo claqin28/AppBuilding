@@ -80,7 +80,12 @@ export class CameraTracker extends BaseSource implements FrameSource {
       if (this.video.currentTime !== lastVideoTime && this.video.readyState >= 2) {
         lastVideoTime = this.video.currentTime;
         const t0 = performance.now();
-        const det = toDetection(landmarker.detectForVideo(this.video, now), now);
+        const det = toDetection(
+          landmarker.detectForVideo(this.video, now),
+          now,
+          this.video.videoWidth,
+          this.video.videoHeight,
+        );
         inferTotal += performance.now() - t0;
         frames++;
         this.emit(det);
@@ -135,7 +140,7 @@ export class ReplayTracker extends BaseSource implements FrameSource {
       const now = performance.now();
       while (i < frames.length && frames[i].t + offset <= now) {
         const f = frames[i++];
-        this.emit({ frame: { ...f, t: f.t + offset }, landmarks: null });
+        this.emit({ frame: { ...f, t: f.t + offset }, landmarks: null, imageWidth: 0, imageHeight: 0 });
         count++;
       }
       if (now - windowStart >= 1000) {

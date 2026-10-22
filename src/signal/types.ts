@@ -21,3 +21,8 @@ export interface Point2 {
   x: number;
   y: number;
 }
+
+/** A face landmark: x, y from 0 to 1 across the image; z = depth on the same scale as x. */
+export interface Point3 extends Point2 {
+  z: number;
+}

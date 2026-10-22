@@ -8,7 +8,7 @@ import type { Trace } from "../signal/trace";
 import type { DetectionListener, FrameSource } from "../vision/tracker";
 import type { Settings } from "./storage";
 
-export type ScreenName = "setup" | "calibrate" | "results" | "talk" | "settings";
+export type ScreenName = "setup" | "calibrate" | "results" | "talk" | "facemap" | "settings";
 
 export interface Screen {
   mount(root: HTMLElement): void;

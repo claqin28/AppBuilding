@@ -393,3 +393,77 @@ export the real shape. Until decided, the export uses the generic face.
 - 5 bins from a sequential palette that gets lighter as values rise and is checked for
   color-vision deficiency.
 - There's always a legend, labels, and a numbers table.
+
+## 3D face map built (V2a) + M4 inputs decided (2026-10-22)
+
+**Owner decisions:**
+- **Build order:** V2a, the 3D head, goes *before* M4. Volunteer testing comes after.
+  The cost is that the technical result (M4) is pushed back. To avoid redoing work,
+  the 3D code is split into pure logic (`src/signal/movementMap.ts`), a renderer
+  (`src/viz/head3d.ts`), and a thin screen. Moving the UI to React later only means
+  rewrapping the screen.
+- **The M4 "Default" condition:** open mouth = SELECT, raise eyebrows = NEXT, smile =
+  BACK, `on` = 0.5. I chose `off` = 0.35. Smoothing, hold time, and refractory period
+  are the same as in the other conditions, so only the gestures and thresholds
+  differ.
+- **The M4 test phrases** were written by the owner (8 phrases, `src/evaluation/setup.ts`).
+
+**What I verified before building:**
+- **The standard face uses the same point numbering as the live landmarks.** MediaPipe's
+  `canonical_face_model.obj` (468 points) compared with landmarks from a test photo:
+  the distance patterns between points correlate at **0.98**, versus **−0.01** when the
+  numbering is shuffled.
+- **The standard face's axes:** +x = the person's left, +y = up, +z = toward the viewer,
+  in centimetres. So point *i* on the standard face is landmark *i*.
+- **The palette** (the 5 blues): checked with the dataviz palette validator in ordinal
+  mode against this app's dark background (#0f1115), and every check passed.
+  - Lightness changes in one direction, each step is visibly different from the next,
+    there's a single hue, and the darkest step is 2.85:1 against the background.
+  - A first, darker version passed too, but its darkest step was only 2.33:1, too faint
+    for thin lines, so I shifted the ramp one step lighter.
+
+**Design decisions:**
+- **Wireframe + points from the package's own tesselation** (unique edges of the 852
+  triangles). No extra mesh file is needed. The solid mesh stays for V2b.
+- **The live head follows the person's head turns; there's no pose correction.** That
+  literally mirrors them in real time and avoids sign-convention bugs in matrix math
+  that I couldn't test (I have no photo of a turned head). The transformation matrix
+  is still available for later.
+- **Mirror view** (the person's left on the screen's left), matching the camera preview.
+  The text labels say "your own left".
+- **Exports use the standard face and the front view,** never the person's own face
+  shape. This applies my earlier recommendation, since the owner didn't choose
+  otherwise. It's easy to change if the owner wants a real-shape option.
+- **Lazy loading:** Three.js is in its own 553 kB file (137 kB compressed), downloaded
+  only when the Face map opens with the 3D view on. The main app grew by 8 kB
+  compressed (the standard face data and regions). WebGL is checked *before*
+  downloading. If there's no WebGL, a message points to the table, and Three.js is
+  never downloaded (verified with WebGL disabled).
+- **Rendering:**
+  - Renders on demand, with no constant loop.
+  - Live shape updates are capped at 20 per second.
+  - No auto-rotation, and no drifting after a drag.
+  - GPU memory is released when leaving the screen or turning the view off.
+- **The off switch** is remembered in settings. When it's off, the 3D code isn't
+  downloaded at all.
+- **Cheeks are split into left and right.** With one combined region, the label landed
+  on the nose (the average of two cheeks is the middle of the face).
+- **Bug found by the browser test and fixed:** "reliability" showed 100% for movements
+  calibration had rejected as too small (they "hit" a threshold buried in the noise).
+  Too-small or rest-like movements now show 0% reliability, with a unit test. This is
+  the same trap as the earlier "Worked 5 of 5 tries" explanation bug.
+
+**Tested (headless Chrome, with the fake-camera photo and the synthetic calibration):**
+- The live wireframe renders.
+- The colored standard face renders, and dragging rotates it.
+- The table and labels match the numbers.
+- The PNG export downloads and contains the legend, numbers, prototype label, and front view.
+- The off switch removes the canvas.
+- With no WebGL, the fallback message shows and Three.js isn't downloaded.
+- No outside requests, no page errors, and 115 unit tests pass.
+
+**Not verified:**
+- A real moving face, real GPU, or real frame rate. The headless test ran at about
+  5 frames/s on software rendering.
+- Touch pinch-zoom on a real touch screen.
+- iPad Safari.

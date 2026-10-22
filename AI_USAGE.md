@@ -25,6 +25,9 @@ record of which parts were generated and which parts I decided or wrote.
   memory-only guest mode with a one-time report; IndexedDB profiles with history,
   backups, and storage warnings; the 3D head (wireframe first, solid mesh only if
   licenses allow); the new priority order.
+- (2026-10-22) **Wrote the 8 M4 test phrases myself** (`src/evaluation/setup.ts`).
+  Chose the Default condition's gestures (open mouth, raise eyebrows, smile at 0.5)
+  from the suggestion. Decided to build the 3D head before M4.
 - _To fill in as I go: code I write or change myself, testing with my own webcam,
   results I collect, design decisions I make._
 
@@ -73,6 +76,16 @@ record of which parts were generated and which parts I decided or wrote.
   designs.
 - Checks: Three.js and MediaPipe licenses, MediaPipe's connection sets and triangle
   data, and the left/right convention, all tested in code.
+
+### V2a: 3D face map (2026-10-22)
+- `src/signal/movementMap.ts` (data-to-color logic), `src/viz/faceRegions.ts`,
+  `src/viz/liveShape.ts`, `src/viz/head3d.ts`, `src/viz/webgl.ts`,
+  `src/ui/faceMapScreen.ts`, `scripts/make-canonical-face.mjs` (and the generated
+  `src/viz/canonicalFace.ts`), the detection changes in `src/vision/`, and the CSS.
+- `src/evaluation/setup.ts` (structure and Default bindings; the phrases are mine).
+- Tests: `tests/movementMap.test.ts`, `tests/faceRegions.test.ts`.
+- Checks: canonical-face numbering, the palette validation, and headless-browser
+  tests of the face map.
 
 ## Third-party code and assets (neither AI nor me)
 - `@mediapipe/tasks-vision` library and `face_landmarker.task` model, © Google, Apache-2.0.

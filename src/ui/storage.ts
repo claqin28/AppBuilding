@@ -25,6 +25,8 @@ export interface Settings {
   speechRate: number;
   voiceURI: string;
   clearAfterSpeak: boolean;
+  /** Show the 3D face map (off = the 3D code isn't even downloaded). */
+  show3d: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -35,6 +37,7 @@ export const DEFAULT_SETTINGS: Settings = {
   speechRate: 0.9,
   voiceURI: "",
   clearAfterSpeak: false,
+  show3d: true,
 };
 
 /** Safety limits for adjustable settings. Scan speed never goes below 500 ms (< 2 changes per second). */
@@ -49,6 +52,7 @@ export function loadSettings(): Settings {
   const raw = readJson(SETTINGS_KEY) as Partial<Settings> | null;
   const s = { ...DEFAULT_SETTINGS, ...(raw ?? {}) };
   if (s.scanMode !== "auto" && s.scanMode !== "step") s.scanMode = "auto";
+  if (typeof s.show3d !== "boolean") s.show3d = DEFAULT_SETTINGS.show3d;
   for (const [key, { min, max }] of Object.entries(LIMITS) as [keyof typeof LIMITS, { min: number; max: number }][]) {
     const v = Number(s[key]);
     s[key] = Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : DEFAULT_SETTINGS[key];
