@@ -12,8 +12,14 @@ import { FaceMapScreen } from "./ui/faceMapScreen";
 import { ResultsScreen } from "./ui/resultsScreen";
 import { SettingsScreen } from "./ui/settingsScreen";
 import { SetupScreen } from "./ui/setupScreen";
-import { loadProfile, loadSettings, saveProfile, saveSettings } from "./ui/storage";
 import { TalkScreen } from "./ui/talkScreen";
+import { mosaicLogo, replayMosaic } from "./ui/mosaic";
+import { Onboarding } from "./ui/onboarding";
+import { renderProfileMenu } from "./ui/profileMenu";
+import { clearLegacy, readLegacy } from "./storage/legacy";
+import { ProfileDb, requestPersistence } from "./storage/profileDb";
+import { DEFAULT_SETTINGS } from "./storage/settings";
+import { GuestStore, ProfileStore, type AppStore } from "./storage/store";
 import { CameraTracker, ReplayTracker, type DetectionListener, type FrameSource } from "./vision/tracker";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -28,6 +34,15 @@ const perfEl = $("perf");
 const replayLabel = $("replay-label");
 const screenRoot = $("screen");
 const navButtons = [...document.querySelectorAll<HTMLButtonElement>("nav [data-screen]")];
+const onboardingRoot = $("onboarding");
+const profileMenuHost = $("profile-menu");
+const cameraPlaceholder = $("camera-placeholder");
+const placeholderText = $("camera-placeholder-text");
+
+// The logo in the header (static) and in the empty camera panel (animates while loading).
+$("logo").replaceChildren(mosaicLogo({ size: 48, label: "Tessera logo" }));
+const placeholderMosaic = mosaicLogo({ size: 112 });
+cameraPlaceholder.prepend(placeholderMosaic);
 
 /** MediaPipe's landmark index for the tip of the nose. */
 const NOSE_TIP = 1;
@@ -46,10 +61,21 @@ const listeners = new Set<DetectionListener>();
 let sourceUnsub: (() => void) | null = null;
 let starting: Promise<boolean> | null = null;
 
+/** Where this session's data lives. Starts as a guest (memory only) until onboarding decides. */
+let store: AppStore = new GuestStore();
+let db: ProfileDb | null = null;
+
+function storageError(err: unknown): void {
+  notify(
+    `Couldn't save to this browser's storage (${err instanceof Error ? err.message : String(err)}). Changes may be lost when you close the page.`,
+    true,
+  );
+}
+
 const ctx: AppContext = {
   source: null,
-  profile: loadProfile(),
-  settings: loadSettings(),
+  profile: null,
+  settings: { ...DEFAULT_SETTINGS },
   lastCalibration: null,
   subscribe(fn) {
     listeners.add(fn);
@@ -66,15 +92,26 @@ const ctx: AppContext = {
     replay.start();
     replayLabel.hidden = false;
     startBtn.hidden = true;
+    cameraPlaceholder.hidden = true;
     notify("Replaying a recording. The camera is not being used.");
   },
   setProfile(p) {
     ctx.profile = p;
-    if (!saveProfile(p)) notify("Couldn't save to this browser's storage. Your setup will be lost when you close the page.", true);
+    store.saveControl(p).catch(storageError);
   },
   setSettings(s) {
     ctx.settings = s;
-    saveSettings(s);
+    store.saveSettings(s).catch(storageError);
+  },
+  recordCalibration(result, durationMs, chosen) {
+    store.addCalibration(result, durationMs, chosen).catch(storageError);
+  },
+  async deleteAllData() {
+    db?.close();
+    db = null;
+    await ProfileDb.deleteEverything();
+    clearLegacy();
+    location.reload();
   },
   notify: (msg, isError) => notify(msg, isError),
   setActivity(a) {
@@ -94,15 +131,19 @@ function setSource(source: FrameSource): void {
 
 async function startCamera(): Promise<boolean> {
   startBtn.disabled = true;
+  placeholderText.textContent = "Loading the face model…";
+  replayMosaic(placeholderMosaic);
   try {
     const cam = new CameraTracker(video);
     await cam.start((msg) => notify(msg));
     setSource(cam);
     notify(`Camera running. Face model is using the ${cam.delegate}.`);
     startBtn.hidden = true;
+    cameraPlaceholder.hidden = true;
     return true;
   } catch (err) {
     notify(err instanceof Error ? err.message : String(err), true);
+    placeholderText.textContent = "Camera off";
     startBtn.disabled = false;
     return false;
   }
@@ -223,4 +264,113 @@ function setCheck(el: HTMLElement, ok: boolean, msg: string): void {
   el.classList.toggle("bad", !ok);
 }
 
-show(ctx.profile ? "talk" : "setup");
+// ----- Profiles, guest mode, onboarding ----------------------------------------
+
+function useStore(next: AppStore): void {
+  store = next;
+  ctx.settings = next.settings;
+  ctx.profile = next.control;
+  applyTheme(next.settings.theme);
+  renderMenu();
+}
+
+async function getDb(): Promise<ProfileDb> {
+  if (db) return db;
+  try {
+    db = await ProfileDb.open();
+    return db;
+  } catch {
+    throw new Error(
+      "This browser can't save profiles right now (it may be in a private window, or site data may be blocked). You can still try Tessera as a guest.",
+    );
+  }
+}
+
+function renderMenu(): void {
+  renderProfileMenu(profileMenuHost, { kind: store.kind, nickname: store.nickname }, {
+    saveGuestToProfile: () => {
+      document.body.classList.add("is-onboarding");
+      onboarding.showNickname({ fromGuest: true });
+    },
+    leaveGuest: () => {
+      if (confirm("Leave guest mode? This session will be erased (nothing was saved).")) location.reload();
+    },
+    switchProfile: async () => {
+      await (await getDb()).setActiveId(null);
+      location.reload();
+    },
+    deleteThisProfile: async () => {
+      if (!(store instanceof ProfileStore)) return;
+      if (!confirm(`Delete the profile “${store.nickname}” and all its saved results from this device? This can't be undone.`)) return;
+      await (await getDb()).deleteProfile(store.id);
+      location.reload();
+    },
+    deleteEverything: () => {
+      if (confirm("Delete ALL Tessera profiles and settings from this browser? This can't be undone.")) void ctx.deleteAllData();
+    },
+  });
+}
+
+const onboarding = new Onboarding(onboardingRoot, {
+  async listProfiles() {
+    if (!(await ProfileDb.exists())) return []; // checking doesn't create a database
+    return (await (await getDb()).listProfiles()).map((p) => ({ id: p.id, nickname: p.nickname }));
+  },
+  async continueAs(id) {
+    const s = await ProfileStore.open(await getDb(), id);
+    if (!s) {
+      notify("That profile couldn't be opened.", true);
+      return;
+    }
+    useStore(s);
+    enterApp();
+  },
+  startGuest() {
+    useStore(new GuestStore());
+  },
+  async createProfile(nickname) {
+    const from = store instanceof GuestStore ? store : new GuestStore();
+    // Carry over a setup saved by an older version of the app (localStorage), once.
+    const legacy = readLegacy();
+    if (legacy?.control && !from.control) from.control = legacy.control;
+    if (legacy?.settings && from.sessions.length === 0) from.settings = { ...legacy.settings, theme: from.settings.theme };
+    const created = await ProfileStore.create(await getDb(), nickname, from);
+    if (legacy) clearLegacy();
+    useStore(created);
+    return requestPersistence();
+  },
+  ensureCamera: () => ctx.ensureCamera(),
+  finish: () => enterApp(),
+  cancel: () => {
+    document.body.classList.remove("is-onboarding");
+    show("setup");
+  },
+});
+
+function enterApp(): void {
+  document.body.classList.remove("is-onboarding");
+  show(ctx.profile ? "talk" : "setup");
+}
+
+/** On load: reopen the active profile if there is one; otherwise show the welcome screen. */
+async function boot(): Promise<void> {
+  renderMenu();
+  try {
+    if (await ProfileDb.exists()) {
+      const d = await getDb();
+      const active = await d.getActiveId();
+      const s = active ? await ProfileStore.open(d, active) : null;
+      if (s) {
+        useStore(s);
+        enterApp();
+        return;
+      }
+    }
+  } catch {
+    /* storage unavailable: fall through to the welcome screen */
+  }
+  document.body.classList.add("is-onboarding");
+  await onboarding.showWelcome();
+}
+
+void boot();

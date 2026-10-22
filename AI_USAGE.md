@@ -93,5 +93,14 @@ record of which parts were generated and which parts I decided or wrote.
   in the calibration and Talk screens, and `scripts/check-contrast.mjs`.
 - The idea to redesign was mine; the specific design was AI-generated.
 
+### Onboarding, guest mode, local profiles, mosaic logo (2026-10-22)
+- The idea (mosaic face logo that assembles while loading; onboarding with sign up or
+  guest) was mine. The implementation was AI-generated:
+  - `src/storage/*`, `src/ui/onboarding.ts`, `src/ui/profileMenu.ts`, `src/ui/mosaic.ts`
+  - the changes in `src/main.ts`, `index.html`, and `src/styles.css`
+  - `tests/storageSchema.test.ts`
+- The design of the face in the logo (which tiles are eyes, cheeks, mouth) was
+  AI-generated too.
+
 ## Third-party code and assets (neither AI nor me)
 - `@mediapipe/tasks-vision` library and `face_landmarker.task` model, © Google, Apache-2.0.

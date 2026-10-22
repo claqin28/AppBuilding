@@ -525,3 +525,65 @@ Tested in headless Chrome, in both themes:
 - typing via replay still works
 - the face map still lazy-loads Three.js
 - no outside requests and no page errors
+
+## Onboarding, guest mode, local profiles, mosaic logo (2026-10-22)
+
+The owner asked for: a mosaic-face logo that "clicks" together while loading;
+onboarding with a short description; and a choice between signing up to save
+progress or starting as a guest.
+
+**"Sign up" became "Create a profile on this device."** The hard constraints say no
+accounts and no server, so a profile is a nickname stored only in this browser
+(IndexedDB). The wording avoids implying an online account, and the UI says "no email,
+no password, no online account".
+
+**Guest mode stores nothing at all.** Tested: after a full guest session there are no
+databases and no localStorage keys. To make that true:
+- The database is created only when a profile is created, and startup checks whether
+  it exists *without* creating it.
+- Settings that used to go straight to localStorage now go through the current store.
+
+**Storage design** (WALKTHROUGH §6):
+- `src/storage/` has pure `schema.ts` / `settings.ts` (12 tests), plus `profileDb.ts`
+  (IndexedDB) and `store.ts` (GuestStore / ProfileStore).
+- Version 1 has a migration framework, caps (20 profiles, 500 sessions each), and
+  calibration stored as ~1.7 KB summaries.
+- Damaged or too-new records are rejected instead of crashing the app.
+- `navigator.storage.persist()` is requested, and a "may be erased" warning appears if
+  the browser refuses. Headless Chrome refused, so the warning path is tested.
+
+**Older saved data:** the old localStorage setup moves into the first profile created,
+then is deleted (tested).
+
+**Leaving or switching** (leave guest, switch profile, delete) reloads the page. That
+gives a clean state with no leftovers from the previous person. The camera then needs
+"Start camera" again, a small cost for a guarantee that one person's session can't
+leak into the next. Saving a guest session to a profile happens without a reload.
+
+**Profile limits stated honestly:** anyone using the same browser can open a profile.
+I didn't add a password, because without a server it could only be checked on the
+device, which protects little and could lock the owner out.
+
+**Mosaic logo** (`src/ui/mosaic.ts`):
+- A 9×9 tile face (eyes, cheeks, smile) as inline SVG, with no image files.
+- A seeded shuffle decides the order the tiles appear, plus a slight tilt per tile for
+  a hand-laid look. The "click into place" animation plays once (about 1.4 s).
+- **This is the app's only animation:**
+  - each tile appears exactly once, so there's no flashing
+  - it's turned off for people with reduced motion (tested: `animation-name: none`)
+- It's used on the welcome screen and as the camera placeholder, where it replays
+  while the face model loads. The header shows a static version.
+- The eye color was lightened slightly after a dark-mode screenshot showed the eyes
+  looking like missing tiles.
+
+**Caregiver-assisted setup:** every onboarding step works with big buttons, and no
+typing is required (nickname suggestions, or leave it blank for "Profile 1").
+
+**Not done yet, and why:**
+- **The reference site's layout and fonts** (tesseractai.web.app) are blocked from the
+  dev environment, so I'm waiting on screenshots or font names. If its font is
+  open-licensed, it will be stored in the app itself (no Google Fonts or other font
+  CDN, which would break the no-network rule) and credited in ATTRIBUTION. I'll copy
+  the *style*, not their code, logo, or text.
+- **The guest one-time report** waits for M4, since there are no evaluation metrics yet.
+- **Profile history charts and backup export/import** are part of step P and not built.

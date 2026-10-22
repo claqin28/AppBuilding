@@ -9,7 +9,9 @@
  * Accessibility rules this file follows:
  *  - States never rely on color alone (icons, text, outlines, thick borders).
  *  - Large targets: buttons are at least 52-64px tall.
- *  - No animations or transitions at all, so nothing moves or flashes on its own.
+ *  - No transitions. The ONE animation is the logo's tiles "clicking" into
+ *    place: it plays once (~1.4 s), each tile appears once (no flashing), and
+ *    it's turned off for people who ask for reduced motion.
  */
 
 /* ---------- Theme tokens ---------------------------------------------------- */
@@ -137,9 +139,19 @@ main:focus { outline: none; }
   padding: 16px 24px 12px;
 }
 .brand { display: flex; align-items: center; gap: 14px; }
-.logo { width: 44px; height: 44px; flex: none; }
-.logo rect { fill: var(--border-strong); }
-.logo .logo-hl { fill: var(--highlight); stroke: var(--highlight-outline); stroke-width: 1.5; }
+.logo { display: inline-flex; flex: none; }
+
+/* Mosaic logo: tiles click into place once, in a shuffled order. */
+.mosaic.assemble rect {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: tile-in 220ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+  animation-delay: var(--delay, 0ms);
+}
+@keyframes tile-in {
+  from { opacity: 0; transform: scale(0.2) rotate(-35deg); }
+  to { opacity: 1; transform: none; }
+}
 .app-header h1 { margin: 0; font-size: 1.7rem; letter-spacing: 0.01em; }
 .tagline { margin: 0; color: var(--muted); font-size: 0.95rem; }
 .header-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
@@ -198,6 +210,65 @@ aside, main {
   padding: 20px; box-shadow: var(--shadow); min-width: 0;
 }
 .panel-title { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 10px; }
+/* ---------- Onboarding --------------------------------------------------------- */
+
+body.is-onboarding .app-nav, body.is-onboarding .layout, body.is-onboarding #profile-menu { display: none; }
+.onboarding { display: none; padding: 20px 24px; }
+body.is-onboarding .onboarding { display: block; }
+.onboarding:focus { outline: none; }
+.ob-card {
+  max-width: 980px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 32px; box-shadow: var(--shadow);
+}
+@media (max-width: 700px) { .ob-card { padding: 20px; } }
+.ob-hero { display: flex; flex-wrap: wrap; gap: 24px 32px; align-items: center; margin-bottom: 8px; }
+.ob-hero > div { flex: 1 1 320px; }
+.ob-title { font-size: 2.1rem; margin-bottom: 10px; }
+.ob-lead { font-size: 1.15rem; }
+.ob-features { list-style: none; padding: 0; margin: 20px 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.ob-feature { display: grid; gap: 4px; padding: 14px 16px; background: var(--surface-2); border-radius: 14px; }
+.ob-feature span { color: var(--muted); }
+.ob-choices { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 16px; }
+.ob-choice { display: flex; flex-direction: column; gap: 8px; padding: 20px; border: 2px solid var(--border-strong); border-radius: 16px; }
+.ob-choice.primary { border-color: var(--accent); background: var(--accent-soft); }
+.ob-choice h4 { margin: 0; font-size: 1.15rem; }
+.ob-choice p { margin: 0; flex: 1; }
+.ob-choice .big-button { width: 100%; }
+.big-button.secondary { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
+.ob-returning { margin: 8px 0 4px; padding: 14px 16px; border-radius: 14px; background: var(--surface-2); }
+.ob-returning h3 { margin-top: 0; }
+.ob-progress { color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.85rem; }
+.ob-list { padding-left: 1.2em; display: grid; gap: 10px; font-size: 1.05rem; }
+.ob-label { display: block; font-weight: 700; margin: 12px 0 6px; }
+#ob-nickname { width: min(420px, 100%); min-height: 56px; padding: 10px 14px; font-size: 1.2rem; border: 2px solid var(--border-strong); border-radius: 12px; background: var(--surface); }
+.ob-error { color: var(--bad); font-weight: 700; min-height: 1.2em; }
+.ob-warning { padding: 12px 16px; border-radius: 12px; border-left: 6px solid var(--warn); background: var(--warn-soft); }
+
+/* ---------- Profile menu (header) --------------------------------------------- */
+
+.profile-menu { position: relative; }
+.profile-menu summary {
+  list-style: none; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  min-height: 44px; padding: 4px 14px 4px 4px; border-radius: 999px; border: 2px solid var(--border-strong); background: var(--surface); font-weight: 600;
+}
+.profile-menu summary::-webkit-details-marker { display: none; }
+.profile-menu .avatar { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--accent-text); font-weight: 800; }
+.profile-name { max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-menu .menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; width: min(320px, 90vw);
+  background: var(--surface); border: 2px solid var(--border-strong); border-radius: 14px; padding: 8px; box-shadow: var(--shadow);
+}
+.menu-note { color: var(--muted); font-size: 0.9rem; margin: 6px 8px 8px; }
+.menu-item { display: block; width: 100%; text-align: left; min-height: 48px; padding: 10px 12px; border: none; border-radius: 10px; background: transparent; cursor: pointer; font-weight: 600; }
+.menu-item:hover { background: var(--surface-2); }
+.menu-item.danger { color: var(--bad); }
+
+/* ---------- Camera placeholder (before the camera starts) --------------------- */
+
+.camera-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--surface-2); }
+.camera-placeholder[hidden] { display: none; }
+.camera-placeholder p { margin: 0; color: var(--muted); font-weight: 600; }
+
 .app-footer { padding: 4px 24px 24px; color: var(--muted); font-size: 0.85rem; }
 
 .video-wrap { position: relative; aspect-ratio: 4 / 3; background: #000; border-radius: 12px; overflow: hidden; }

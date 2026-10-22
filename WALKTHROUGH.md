@@ -276,63 +276,76 @@ is the learned word list kept out of the progress report by default?
 
 ---
 
-## 6. Storage schema for local profiles (planned: design, not built yet)
+## 6. Storage: guest mode and local profiles
 
-Planned for step P (`PLAN.md`). This will be updated to match the real code.
+Built 2026-10-22. Code: `src/storage/` (`schema.ts` and `settings.ts` are pure and
+tested in `tests/storageSchema.test.ts`; `profileDb.ts` talks to IndexedDB;
+`store.ts` holds the two kinds of session). Planned but not built yet: the history
+view, backup export/import, and the one-time guest report.
 
-**Where:** IndexedDB, the browser's built-in database. It lives only in this browser on
-this device. There's no server, so there's nothing to log in to. A profile is just a
-nickname.
+**Two kinds of session, one interface.** Screens save through an `AppStore` and don't
+know which kind they have:
+- **GuestStore:** everything lives in the page's memory. **Nothing is written
+  anywhere,** not even an empty database, so closing or reloading the tab erases it.
+  The browser test checks this: after a full guest session (camera, calibration,
+  theme change) there are zero databases and zero localStorage keys.
+- **ProfileStore:** a local profile in **IndexedDB**, the browser's built-in database.
+  It lives only in this browser on this device. There's no server, so there's nothing
+  to log in to. A profile is just a nickname.
 
-**Database `tessera`, schema version 1. Four "object stores" (tables):**
+**Database `tessera`, version 1:**
 
 | Store | Key | What one record holds |
 |---|---|---|
-| `meta` | `"schema"` | `{ schemaVersion, createdAt }` |
-| `profiles` | `id` (random, made on this device) | `{ id, nickname, createdAt, updatedAt, settings, controlSetup }`: `controlSetup` is the gesture→action bindings and thresholds |
-| `sessions` | `id`, indexed by `[profileId, startedAt]` | `{ id, profileId, startedAt, endedAt, calibration?, evaluation?, fatigueEvents[] }` |
-| `words` (M8) | `[profileId, word]` | `{ count }`: the learned word frequencies |
+| `meta` | `key` | `{ key: "activeProfileId", value }`: which profile opens automatically next time |
+| `profiles` | `id` (random, made on this device) | `{ schemaVersion, id, nickname, createdAt, updatedAt, settings, control }`: `control` is the gesture → action setup and thresholds |
+| `sessions` | `id`, indexed by `profileId` | `{ schemaVersion, id, profileId, startedAt, calibration: { durationMs, chosen[], gestures[] } }` |
 
-- `calibration` = `{ durationMs, chosen[], gestures: [{ id, hitRate, auc, gap, restLevel, typicalPeak, on, off, reactionMs, usable }] }`.
-  These are *summary numbers*, not recordings.
-- `evaluation` = `{ condition, idleFalsePerMin, charsPerMin, errorRate }` (from M4).
+- **The database is only created when someone creates a profile.** On startup, the app
+  checks whether it exists (`indexedDB.databases()`) *without* creating it.
+- **Each calibration is stored as summary numbers** (hit rate, AUC, gap, thresholds,
+  reaction time per gesture), about **1.7 KB**. A raw recording would be several
+  megabytes.
+- **Never stored:** video, frames, images, face landmarks (face shape), raw recordings,
+  or typed messages.
 
-**Never stored:** video, frames, images, face landmarks (face shape), raw recordings
-(those are only downloaded by choice), and typed messages.
+**Caps:** at most 20 profiles, and at most 500 sessions per profile. Past the cap, the
+oldest sessions are dropped automatically.
 
-**Why summaries instead of recordings?** A 5-minute calibration recording (51 signals, 30 times a second) is several
-megabytes. Its summary is about 2 KB. History charts only need the summaries, and summaries reveal
-less about the person.
+**Versioned schema and migrations.** Every record carries `schemaVersion`. When a
+future version changes the shape, a **migration** function upgrades old records one
+step at a time (v1 → v2 → v3). Each migration is a pure function,
+`(oldRecord) => newRecord`, so it's testable without a browser. `readProfileRecord()`
+also repairs bad settings and safely *rejects* damaged data, or data from a newer
+version, instead of crashing. (Version 1 is the only one so far, so the migration
+list is empty, but the place for it exists.)
 
-**Caps.** At most 20 profiles, and at most 500 sessions per profile. When a profile
-passes the cap, the oldest sessions are dropped, and the app warns first.
-`navigator.storage.estimate()` shows how much space is used, and the app warns before
-the browser's limit gets close.
+**Data from older versions of the app.** Earlier versions kept the setup in
+localStorage. The first time someone creates a profile, that old data is moved into
+it and then deleted from localStorage. Nothing new is ever written to localStorage.
 
-**Versioned schema with migrations.** Every record carries the schema version it was
-written with. When the app updates and the schema changes (say, version 2 adds a field),
-a **migration** function upgrades old records step by step: v1 → v2 → v3. Each
-migration is a pure function, `(oldRecord) => newRecord`, so it can be unit tested
-without a browser. The same migrations run when you **import a backup** made by an
-older version.
+**Storage that might not last.** After creating a profile, the app asks the browser to
+keep its data (`navigator.storage.persist()`). If the browser says no, the app warns:
+*"this browser may erase your profile, for example in a private window or when
+browsing data is cleared."* Private browsing can't be detected for certain, so the
+warning says *may*. If the database can't open at all, the app explains why and offers
+guest mode.
 
-**Backup file format:**
-`{ format: "tessera-backup", schemaVersion, exportedAt, profile, sessions[], words[] }`.
-It's downloaded only when the person clicks Export. Import checks the format, migrates
-the data, and asks before overwriting anything.
+**Honest limits:** anyone using the same browser on the same computer can open a
+profile. There's no password, because with no server a password could only be checked
+on the device itself, which would protect very little. The UI says this.
 
-**Storage that might not last.** The app asks the browser to keep its data
-(`navigator.storage.persist()`). If the browser says no, if storage fails to open, or
-if the quota is unusually small (a common sign of private browsing), the app warns:
-*"This browser may erase your profile when it closes. Export a backup."* Private
-browsing can't be detected for certain, so the wording says *may*.
+**Questions:** Why does guest mode avoid even *opening* the database? Why store
+summaries instead of recordings? What's a migration, and why should each one be a pure
+function? Why can't the app promise to detect private browsing? Who can see a local
+profile?
 
-**Guest mode uses none of this.** Its data lives only in the page's memory, so closing
-or reloading the tab erases it.
-
-**Questions:** Why store summaries instead of recordings? What's a migration, and why
-must each one be a pure function? Why can't the app promise to detect private browsing?
-Who *can* see a local profile? (Anyone using the same browser on the same computer.)
+**Planned, not built yet:**
+- A `words` store for M8, `{ profileId, word, count }`, holding learned word frequencies.
+- Backups as a file, downloaded only when the person clicks Export:
+  `{ format: "tessera-backup", schemaVersion, exportedAt, profile, sessions[] }`.
+  Import will check the format, run the same migrations, and ask before overwriting.
+- A warning based on `navigator.storage.estimate()` before space runs low.
 
 ---
 

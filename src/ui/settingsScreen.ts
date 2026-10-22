@@ -4,7 +4,7 @@ import { parseTrace, traceFrames } from "../signal/trace";
 import type { AppContext, Screen } from "./app";
 import { h, pickTextFile } from "./dom";
 import { onDeviceVoices, speak, speakErrorMessage, voicesReady } from "./speech";
-import { clearAll, DEFAULT_SETTINGS, LIMITS, type Settings } from "./storage";
+import { LIMITS, type Settings } from "../storage/settings";
 
 export class SettingsScreen implements Screen {
   constructor(private ctx: AppContext) {}
@@ -75,7 +75,7 @@ export class SettingsScreen implements Screen {
       h(
         "p",
         { class: "hint" },
-        "Your gesture setup and settings are stored only in this browser on this device. No video or images are ever stored.",
+        "Profiles (your gesture setup, settings, and calibration summaries) are stored only in this browser on this device. Guests store nothing. No video or images are ever stored.",
       ),
       h(
         "div",
@@ -85,13 +85,11 @@ export class SettingsScreen implements Screen {
           {
             class: "mid-button danger",
             onclick: () => {
-              if (!confirm("Delete your saved gestures and settings from this browser?")) return;
-              clearAll();
-              this.ctx.setSettings({ ...DEFAULT_SETTINGS });
-              location.reload();
+              if (!confirm("Delete ALL Tessera profiles and settings from this browser? This can't be undone.")) return;
+              void this.ctx.deleteAllData();
             },
           },
-          "Delete all saved data",
+          "Delete all Tessera data on this device",
         ),
       ),
       h("h3", {}, "Testing tools"),

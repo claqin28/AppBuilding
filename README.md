@@ -28,6 +28,12 @@ thresholds for that person.
 
 ## What works now
 
+0. **Welcome and onboarding:** a short description, then **create a profile on this
+   device** (just a nickname, saved only in this browser, with no email, password, or
+   online account) or **try as a guest** (nothing saved at all). Then a plain-language
+   privacy step and why the camera is needed. Returning profile users skip straight in.
+   The profile menu in the header can switch profiles, delete one, delete all data, or
+   save a guest session to a profile.
 1. **Camera check:** live view of the 51 facial signals, a face-detected indicator,
    and position and lighting checks in plain language.
 2. **Calibration (about 1–5 minutes):** rest, then natural movement (talking, looking
@@ -78,8 +84,11 @@ mobile support until that's tested.
 - Text-to-speech uses **on-device voices only**. Chrome also offers "Google …" voices
   that send text to Google's servers, so the app hides and never uses them.
 - No speech recognition is used. Chrome's version sends audio to a server.
-- Your gesture setup and settings are kept in this browser's local storage on this
-  device only, and Settings has a button to delete them.
+- **Guests store nothing.** Closing or reloading the page erases the session.
+- **Profiles** (nickname, settings, gesture setup, and calibration *summary numbers*)
+  are kept only in this browser's IndexedDB on this device. Anyone using the same
+  browser can open them, and clearing browsing data erases them. The profile menu and
+  Settings can delete them.
 - **A Content-Security-Policy blocks all network requests to other sites,** in both
   the dev server and production builds.
 - **What the website host sees:** the app is served by GitHub Pages. Like any

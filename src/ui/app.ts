@@ -3,10 +3,11 @@
  * can reach the active frame source, the saved profile, and each other.
  */
 import type { CalibrationResult } from "../signal/calibration";
+import type { GestureId } from "../signal/gestures";
 import type { Profile } from "../signal/profile";
 import type { Trace } from "../signal/trace";
 import type { DetectionListener, FrameSource } from "../vision/tracker";
-import type { Settings } from "./storage";
+import type { Settings } from "../storage/settings";
 
 export type Activity = "calibrating" | "paused";
 
@@ -46,6 +47,10 @@ export interface AppContext {
    * paused control, null otherwise.
    */
   setActivity(activity: Activity | null): void;
+  /** Saves a calibration's summary numbers to the current profile (guests: memory only). */
+  recordCalibration(result: CalibrationResult, durationMs: number, chosen: GestureId[]): void;
+  /** Deletes every Tessera profile and setting in this browser, then reloads. */
+  deleteAllData(): Promise<void>;
   /** Shows a short message to the user in the status area. */
   notify(msg: string, isError?: boolean): void;
 }

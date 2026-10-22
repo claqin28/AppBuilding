@@ -5,6 +5,8 @@ What the video should *show*. This isn't a script; the words are yours. Items ma
 aren't built.
 
 ## Must show
+- [ ] The welcome screen: what Tessera does, and the choice between a profile on this device and a guest
+- [ ] That a "profile" is local only: no email, no password, no online account
 - [ ] The privacy statement on screen, and that the app runs in the browser with no account
 - [ ] Chrome DevTools **Network** tab during use: no requests to other sites
 - [ ] Camera check: face detected indicator, position and lighting checks

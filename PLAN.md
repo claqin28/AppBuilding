@@ -64,9 +64,9 @@ Audited 2026-10-19 by re-running every check on the current code (see DECISIONS)
 | M4 | Evaluation mode (the technical result) | ❌ **Not started** (only calibration time is logged) |
 | H | Hardening pass | ❌ **Not started** (done early: face-lost pause, no-face guard, CSP) |
 | M5 | Drift and fatigue adaptation | Planned. **Placement needs your decision** (see below) |
-| G | Onboarding + guest mode + one-time report | Planned |
+| G | Onboarding + guest mode + one-time report | 🟡 **Onboarding and guest mode built** (2026-10-22). One-time report: waits for M4 metrics |
 | V2a | 3D head, live wireframe/point cloud + movement-map colors | ✅ **First version built (2026-10-22),** moved ahead of M4 by the owner. Tested in headless Chrome only |
-| P | Local profiles (IndexedDB) + history charts | Planned |
+| P | Local profiles (IndexedDB) + history charts | 🟡 **Profiles built** (create, switch, delete, guest → profile, data from older versions carried over). History charts and backup export/import still to do |
 | V2b | 3D head: solid shaded mesh upgrade | Planned |
 | M6 | Saved quick phrases | Planned (basics exist from M3) |
 | M7 | Message share/export (the report part moves into G and P) | Planned |
@@ -77,6 +77,10 @@ Audited 2026-10-19 by re-running every check on the current code (see DECISIONS)
 **Order (owner's priority, 2026-10-19):** finish and verify M1–M4 and H first (R and
 V1 are part of finishing M1–M3 to the locked spec). Then **G → V2a → P → V2b**. Cut M9
 before any of these.
+
+**Waiting on the owner:** screenshots or font names of the reference site
+(tesseractai.web.app) for the layout/font restyle. That site is blocked from the dev
+environment.
 
 **Changes (2026-10-22, owner's decisions):** V2a, the 3D head, was built *before* M4
 so the owner could see it first. React is dropped; the UI stays plain TypeScript.

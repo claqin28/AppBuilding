@@ -11,18 +11,8 @@
     <a class="skip-link" href="#screen">Skip to main content</a>
     <header class="app-header">
       <div class="brand">
-        <!-- Logo: a grid of mosaic tiles ("tesserae"), one highlighted like the scanning keyboard. -->
-        <svg class="logo" viewBox="0 0 34 34" aria-hidden="true">
-          <rect x="1" y="1" width="9" height="9" rx="2" />
-          <rect x="12.5" y="1" width="9" height="9" rx="2" />
-          <rect x="24" y="1" width="9" height="9" rx="2" />
-          <rect x="1" y="12.5" width="9" height="9" rx="2" />
-          <rect class="logo-hl" x="12.5" y="12.5" width="9" height="9" rx="2" />
-          <rect x="24" y="12.5" width="9" height="9" rx="2" />
-          <rect x="1" y="24" width="9" height="9" rx="2" />
-          <rect x="12.5" y="24" width="9" height="9" rx="2" />
-          <rect x="24" y="24" width="9" height="9" rx="2" />
-        </svg>
+        <!-- Logo: a face made of mosaic tiles (drawn by src/ui/mosaic.ts). -->
+        <span id="logo" class="logo"></span>
         <div>
           <h1>Tessera</h1>
           <p class="tagline">Type and speak with small face movements</p>
@@ -32,6 +22,7 @@
         <p id="tracking-badge" class="tracking-badge" data-state="off" role="status" aria-live="polite">
           <span class="dot" aria-hidden="true"></span><span class="badge-text">Camera off</span>
         </p>
+        <span id="profile-menu"></span>
         <label class="theme-picker">
           <span class="visually-hidden">Color theme</span>
           <select id="theme" aria-label="Color theme">
@@ -57,11 +48,15 @@
         <button data-screen="settings">Settings</button>
       </div>
     </nav>
+    <section id="onboarding" class="onboarding" tabindex="-1" aria-label="Getting started"></section>
     <div class="layout">
       <aside class="camera-panel" aria-label="Camera">
         <h2 class="panel-title">Camera</h2>
         <div class="video-wrap">
           <video id="video" playsinline muted aria-label="Your camera preview (mirrored)"></video>
+          <div id="camera-placeholder" class="camera-placeholder">
+            <p id="camera-placeholder-text">Camera off</p>
+          </div>
           <p id="replay-label" class="replay-label" hidden>Replaying a recording · camera off</p>
         </div>
         <button id="start" class="big-button wide">Start camera</button>

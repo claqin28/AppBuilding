@@ -19,7 +19,7 @@ import type { AppContext, Screen } from "./app";
 import { h } from "./dom";
 import { Meters } from "./meters";
 import { speak, speakErrorMessage } from "./speech";
-import { LIMITS } from "./storage";
+import { LIMITS } from "../storage/settings";
 
 const TICK_MS = 50;
 const RESUME_HOLD_MS = 1000;

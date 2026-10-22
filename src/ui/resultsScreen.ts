@@ -93,6 +93,7 @@ export class ResultsScreen implements Screen {
     save.addEventListener("click", () => {
       if (!profile) return;
       this.ctx.setProfile(profile);
+      this.ctx.recordCalibration(result, durationMs, profile.bindings.map((b) => b.gesture));
       this.ctx.go("talk");
     });
 
