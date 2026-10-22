@@ -467,3 +467,17 @@ export the real shape. Until decided, the export uses the generic face.
   5 frames/s on software rendering.
 - Touch pinch-zoom on a real touch screen.
 - iPad Safari.
+
+## No React: the UI stays plain TypeScript (2026-10-22)
+
+The owner decided to keep the UI in plain TypeScript instead of moving it to React.
+The plan's step R is dropped. Reasons:
+- It changes nothing for users.
+- It saves time for M4, the technical result.
+- It keeps dependencies minimal.
+- The core logic (signal processing, keyboard, face-map math) never used React anyway.
+
+The app is a web app either way; React would only have changed how the screens are
+written. The earlier rules still apply in framework-free form: signal-processing code
+has no UI imports, and the camera loop runs on requestAnimationFrame, separate from
+the screens.

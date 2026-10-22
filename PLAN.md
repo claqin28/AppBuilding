@@ -8,14 +8,15 @@ What gets built, in what order, and what gets cut first. Reasons live in
 **Cost and stack**
 1. **Everything is free.** No paid services, no API keys, no accounts, no backend.
    Static hosting on a free tier (GitHub Pages, HTTPS).
-2. **The stack is locked:** React + TypeScript + Vite, `@mediapipe/tasks-vision` Face
-   Landmarker. Desktop Chrome first. iPad Safari is a best-effort test target: no mobile
+2. **The stack:** TypeScript + Vite with **no UI framework** (owner's decision,
+   2026-10-22; React is no longer planned), `@mediapipe/tasks-vision` Face Landmarker,
+   and Three.js for the 3D face map (lazy-loaded). Desktop Chrome first. iPad Safari is a best-effort test target: no mobile
    or iPad support is claimed until it's tested.
 3. **Signal-processing code** (calibration, selection, hysteresis, debounce, drift,
-   word prediction, visualization math) is plain TypeScript with **no React or Three.js
-   imports**, and it has unit tests.
-4. **The camera/landmarker loop runs outside React state** (requestAnimationFrame +
-   refs). Only low-frequency UI events go into React state.
+   word prediction, visualization math) has **no DOM, UI, or Three.js imports**, and it
+   has unit tests.
+4. **The camera/landmarker loop runs on requestAnimationFrame, separate from the
+   screens.** Screens subscribe and redraw at most about 10–15 times a second.
 
 **Privacy**
 
@@ -54,11 +55,12 @@ Audited 2026-10-19 by re-running every check on the current code (see DECISIONS)
 
 | Step | What | Status |
 |---|---|---|
-| M1 | Camera, live signals, setup checks, HTTPS deploy | 🟡 **Works, but not to spec:** UI isn't React yet; 2D overlay (V1) not built |
+| M1 | Camera, live signals, setup checks, HTTPS deploy | 🟡 **Works.** 2D overlay (V1) not built |
 | M2 | Calibration + gesture selection | 🟡 **Works on synthetic data and a photo.** Measures time-to-*fire*, not time-to-*peak* (small fix). Thresholds unvalidated on real faces |
 | M3 | Control engine, scanning keyboard, speech | 🟡 **Works.** Missing from the safety rules: always-visible tracking badge, pause keyboard shortcut, undo for Clear. **Speech has never been heard** (headless Chrome has no voices) |
-| **R** | **Move the UI layer to React** + the missing M3 safety items | ⏭ **Next** |
-| **V1** | Face visualization Tier 1 (2D overlay, mesh-only mode, per-gesture bars) | ⏭ With R |
+| ~~R~~ | ~~Move the UI to React~~ | **Dropped** (owner's decision, 2026-10-22: stay with plain TypeScript) |
+| **S** | The missing M3 safety items (tracking badge, pause shortcut, undo for Clear) + time-to-peak | ⏭ **Next, with M4** |
+| V1 | Face visualization Tier 1 (2D overlay, mesh-only mode, per-gesture bars) | Planned |
 | M4 | Evaluation mode (the technical result) | ❌ **Not started** (only calibration time is logged) |
 | H | Hardening pass | ❌ **Not started** (done early: face-lost pause, no-face guard, CSP) |
 | M5 | Drift and fatigue adaptation | Planned. **Placement needs your decision** (see below) |
@@ -76,9 +78,9 @@ Audited 2026-10-19 by re-running every check on the current code (see DECISIONS)
 V1 are part of finishing M1–M3 to the locked spec). Then **G → V2a → P → V2b**. Cut M9
 before any of these.
 
-**Change (2026-10-22, owner's decision):** V2a, the 3D head, was built *before* M4 so
-the owner could see it first. Volunteer testing for M4 comes after. **Next:** R + V1,
-then M4.
+**Changes (2026-10-22, owner's decisions):** V2a, the 3D head, was built *before* M4
+so the owner could see it first. React is dropped; the UI stays plain TypeScript.
+**Next:** M4 (with the S safety items), so volunteer testing can start.
 
 **Needs your decision:** where M5 (drift) goes. Your earlier priority put it right
 after the hardening pass; the new list doesn't mention it. *Recommendation:* M4 → H →
@@ -88,24 +90,14 @@ claimed contributions, and the reports and history need fatigue events.
 **If time gets tight, protect in this order:** M1–M4 + H → (M5) → G → V2a → P → V2b →
 M6–M7 → M8. **M9 is cut first.**
 
-## R: Move the UI layer to React (next)
+## S: Missing M3 safety items (with M4)
 
-The current UI is plain TypeScript DOM code, because the first spec said "no UI
-framework". The locked stack is React, so the UI layer (the screens in `src/ui/`) gets
-rewritten as React components. What stays the same:
-- `src/signal/`, `src/keyboard/`, and `src/vision/` stay as they are (already
-  framework-free), along with their 86 tests.
-- The camera loop stays outside React (rAF + refs). Components subscribe to it and
-  update React state at most ~10 times per second.
-- Every current behavior stays the same. Done when the existing end-to-end checks pass
-  unchanged.
-- Also adds the missing M3 safety items:
-  - an always-visible tracking badge (Tracking / Paused / Calibrating / No face)
-  - a pause keyboard shortcut for helpers
-  - undo for "Clear all"
+- An always-visible tracking badge (Tracking / Paused / Calibrating / No face).
+- A pause keyboard shortcut for helpers.
+- Undo for "Clear all".
 - M2 fix: record time-to-peak as well as time-to-fire.
 
-## V1: Face visualization, Tier 1 (with R)
+## V1: Face visualization, Tier 1
 
 - **2D landmark overlay** drawn on a canvas over the camera view, using the 478 face
   landmarks and MediaPipe's official mesh/contour connection lists
