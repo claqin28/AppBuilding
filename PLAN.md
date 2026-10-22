@@ -59,7 +59,7 @@ Audited 2026-10-19 by re-running every check on the current code (see DECISIONS)
 | M2 | Calibration + gesture selection | 🟡 **Works on synthetic data and a photo.** Measures time-to-*fire*, not time-to-*peak* (small fix). Thresholds unvalidated on real faces |
 | M3 | Control engine, scanning keyboard, speech | 🟡 **Works.** Missing from the safety rules: always-visible tracking badge, pause keyboard shortcut, undo for Clear. **Speech has never been heard** (headless Chrome has no voices) |
 | ~~R~~ | ~~Move the UI to React~~ | **Dropped** (owner's decision, 2026-10-22: stay with plain TypeScript) |
-| **S** | The missing M3 safety items (tracking badge, pause shortcut, undo for Clear) + time-to-peak | ⏭ **Next, with M4** |
+| **S** | The missing M3 safety items (tracking badge, pause shortcut, undo for Clear) + time-to-peak | 🟡 **Tracking badge done** (2026-10-22, with the redesign). Pause shortcut, undo, and time-to-peak: next, with M4 |
 | V1 | Face visualization Tier 1 (2D overlay, mesh-only mode, per-gesture bars) | Planned |
 | M4 | Evaluation mode (the technical result) | ❌ **Not started** (only calibration time is logged) |
 | H | Hardening pass | ❌ **Not started** (done early: face-lost pause, no-face guard, CSP) |
@@ -92,7 +92,8 @@ M6–M7 → M8. **M9 is cut first.**
 
 ## S: Missing M3 safety items (with M4)
 
-- An always-visible tracking badge (Tracking / Paused / Calibrating / No face).
+- ✅ An always-visible tracking badge (Tracking / Paused / Calibrating / No face), done
+  2026-10-22.
 - A pause keyboard shortcut for helpers.
 - Undo for "Clear all".
 - M2 fix: record time-to-peak as well as time-to-fire.

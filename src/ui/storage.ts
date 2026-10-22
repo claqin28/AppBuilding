@@ -27,6 +27,8 @@ export interface Settings {
   clearAfterSpeak: boolean;
   /** Show the 3D face map (off = the 3D code isn't even downloaded). */
   show3d: boolean;
+  /** Color theme: follow the computer's setting, or force light/dark. */
+  theme: "auto" | "light" | "dark";
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -38,6 +40,7 @@ export const DEFAULT_SETTINGS: Settings = {
   voiceURI: "",
   clearAfterSpeak: false,
   show3d: true,
+  theme: "auto",
 };
 
 /** Safety limits for adjustable settings. Scan speed never goes below 500 ms (< 2 changes per second). */
@@ -53,6 +56,7 @@ export function loadSettings(): Settings {
   const s = { ...DEFAULT_SETTINGS, ...(raw ?? {}) };
   if (s.scanMode !== "auto" && s.scanMode !== "step") s.scanMode = "auto";
   if (typeof s.show3d !== "boolean") s.show3d = DEFAULT_SETTINGS.show3d;
+  if (!["auto", "light", "dark"].includes(s.theme)) s.theme = "auto";
   for (const [key, { min, max }] of Object.entries(LIMITS) as [keyof typeof LIMITS, { min: number; max: number }][]) {
     const v = Number(s[key]);
     s[key] = Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : DEFAULT_SETTINGS[key];

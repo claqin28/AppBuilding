@@ -6,7 +6,7 @@
 import "./styles.css";
 import { checkPosition, faceBoxFromLandmarks } from "./signal/quality";
 import type { Trace } from "./signal/trace";
-import type { AppContext, Screen, ScreenName } from "./ui/app";
+import type { Activity, AppContext, Screen, ScreenName } from "./ui/app";
 import { CalibrationScreen } from "./ui/calibrationScreen";
 import { FaceMapScreen } from "./ui/faceMapScreen";
 import { ResultsScreen } from "./ui/resultsScreen";
@@ -32,6 +32,14 @@ const navButtons = [...document.querySelectorAll<HTMLButtonElement>("nav [data-s
 /** MediaPipe's landmark index for the tip of the nose. */
 const NOSE_TIP = 1;
 const STATUS_INTERVAL_MS = 100;
+/** No face for this long = the badge says "No face". */
+const FACE_LOST_MS = 700;
+
+const badge = $("tracking-badge");
+const badgeText = badge.querySelector<HTMLElement>(".badge-text")!;
+const themeSelect = $<HTMLSelectElement>("theme");
+let activity: Activity | null = null;
+let lastFaceSeen = 0;
 
 // Every screen subscribes here; detections from the current source are forwarded.
 const listeners = new Set<DetectionListener>();
@@ -69,6 +77,10 @@ const ctx: AppContext = {
     saveSettings(s);
   },
   notify: (msg, isError) => notify(msg, isError),
+  setActivity(a) {
+    activity = a;
+    updateBadge();
+  },
 };
 
 function setSource(source: FrameSource): void {
@@ -95,6 +107,54 @@ async function startCamera(): Promise<boolean> {
     return false;
   }
 }
+
+// ----- Tracking badge (always visible, required by the safety rules) ---------
+
+/**
+ * One word that's always true about the control state. Priority: no camera,
+ * then no face (the most important safety signal), then paused, then
+ * calibrating, then tracking. Each state also has its own dot shape (CSS), so
+ * it never depends on color alone.
+ */
+function updateBadge(): void {
+  let state: string;
+  let text: string;
+  if (!ctx.source) {
+    state = "off";
+    text = "Camera off";
+  } else if (performance.now() - lastFaceSeen > FACE_LOST_MS) {
+    state = "noface";
+    text = "No face: control paused";
+  } else if (activity === "paused") {
+    state = "paused";
+    text = "Paused";
+  } else if (activity === "calibrating") {
+    state = "calibrating";
+    text = "Calibrating";
+  } else {
+    state = "tracking";
+    text = ctx.source.kind === "replay" ? "Tracking (replay)" : "Tracking";
+  }
+  if (badge.dataset.state !== state) {
+    badge.dataset.state = state;
+    badgeText.textContent = text;
+  }
+}
+setInterval(updateBadge, 250);
+
+// ----- Theme ------------------------------------------------------------------
+
+function applyTheme(theme: "auto" | "light" | "dark"): void {
+  if (theme === "auto") delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = theme;
+  themeSelect.value = theme;
+}
+applyTheme(ctx.settings.theme);
+themeSelect.addEventListener("change", () => {
+  const theme = themeSelect.value as "auto" | "light" | "dark";
+  ctx.setSettings({ ...ctx.settings, theme });
+  applyTheme(theme);
+});
 
 function notify(msg: string, isError = false): void {
   statusEl.textContent = msg;
@@ -133,6 +193,7 @@ startBtn.addEventListener("click", () => void ctx.ensureCamera());
 
 let lastStatus = 0;
 ctx.subscribe((det) => {
+  if (det.frame.face) lastFaceSeen = performance.now();
   if (det.frame.t - lastStatus < STATUS_INTERVAL_MS) return;
   lastStatus = det.frame.t;
   setCheck(faceEl, det.frame.face, det.frame.face ? "Face detected" : "No face detected");

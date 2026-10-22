@@ -8,6 +8,8 @@ import type { Trace } from "../signal/trace";
 import type { DetectionListener, FrameSource } from "../vision/tracker";
 import type { Settings } from "./storage";
 
+export type Activity = "calibrating" | "paused";
+
 export type ScreenName = "setup" | "calibrate" | "results" | "talk" | "facemap" | "settings";
 
 export interface Screen {
@@ -38,6 +40,12 @@ export interface AppContext {
   useReplay(trace: Trace): void;
   setProfile(p: Profile): void;
   setSettings(s: Settings): void;
+  /**
+   * Screens report what they're doing so the header badge can always show the
+   * tracking state: "calibrating" during calibration, "paused" when the person
+   * paused control, null otherwise.
+   */
+  setActivity(activity: Activity | null): void;
   /** Shows a short message to the user in the status area. */
   notify(msg: string, isError?: boolean): void;
 }

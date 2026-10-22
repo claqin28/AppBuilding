@@ -87,5 +87,11 @@ record of which parts were generated and which parts I decided or wrote.
 - Checks: canonical-face numbering, the palette validation, and headless-browser
   tests of the face map.
 
+### Visual redesign (2026-10-22)
+- `src/styles.css` (rewritten with light/dark tokens), `index.html` (header, logo,
+  badge, nav, footer), the badge and theme logic in `src/main.ts`, `setActivity` hooks
+  in the calibration and Talk screens, and `scripts/check-contrast.mjs`.
+- The idea to redesign was mine; the specific design was AI-generated.
+
 ## Third-party code and assets (neither AI nor me)
 - `@mediapipe/tasks-vision` library and `face_landmarker.task` model, © Google, Apache-2.0.

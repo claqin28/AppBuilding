@@ -182,6 +182,7 @@ export class TalkScreen implements Screen {
   }
 
   unmount(): void {
+    if (this.paused) this.ctx.setActivity(null);
     this.unsub?.();
     this.unsub = null;
     if (this.timer !== null) clearInterval(this.timer);
@@ -268,6 +269,7 @@ export class TalkScreen implements Screen {
 
   private setPaused(paused: boolean): void {
     this.paused = paused;
+    this.ctx.setActivity(paused ? "paused" : null);
     this.resumeStart = null;
     this.els.pausedBanner.hidden = !paused;
     this.els.resumeHint.textContent = "";

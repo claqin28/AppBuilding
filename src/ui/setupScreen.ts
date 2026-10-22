@@ -20,9 +20,11 @@ export class SetupScreen implements Screen {
     root.append(
       h("h2", {}, "Step 1: Camera check"),
     );
-    if (!this.ctx.source) {
-      root.append(h("p", { class: "callout" }, "Press “Start camera” on the left. Your browser will ask for permission."));
-    }
+    // Hint shown until the first camera frame arrives, then removed.
+    const startHint = this.ctx.source
+      ? null
+      : h("p", { class: "callout" }, "Press “Start camera” on the left. Your browser will ask for permission.");
+    if (startHint) root.append(startHint);
     root.append(
       h(
         "p",
@@ -42,6 +44,7 @@ export class SetupScreen implements Screen {
 
     let last = 0;
     this.unsub = this.ctx.subscribe((det) => {
+      startHint?.remove();
       if (det.frame.t - last < UI_INTERVAL_MS || !det.frame.face) return;
       last = det.frame.t;
       debug.update(det.frame.scores);

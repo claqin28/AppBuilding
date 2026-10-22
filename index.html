@@ -4,30 +4,67 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Control a scanning keyboard with facial movements. Runs entirely on your device." />
+    <meta name="color-scheme" content="light dark" />
     <title>Tessera</title>
   </head>
   <body>
-    <header>
-      <h1>Tessera</h1>
-      <p class="privacy" role="note">
-        <strong>Private by design:</strong> your camera video is processed only inside this browser tab.
-        No video or images are recorded, stored, or sent anywhere.
-      </p>
-      <nav aria-label="Steps">
-        <button data-screen="setup">1. Camera check</button>
-        <button data-screen="calibrate">2. Calibrate</button>
-        <button data-screen="talk">3. Talk</button>
+    <a class="skip-link" href="#screen">Skip to main content</a>
+    <header class="app-header">
+      <div class="brand">
+        <!-- Logo: a grid of mosaic tiles ("tesserae"), one highlighted like the scanning keyboard. -->
+        <svg class="logo" viewBox="0 0 34 34" aria-hidden="true">
+          <rect x="1" y="1" width="9" height="9" rx="2" />
+          <rect x="12.5" y="1" width="9" height="9" rx="2" />
+          <rect x="24" y="1" width="9" height="9" rx="2" />
+          <rect x="1" y="12.5" width="9" height="9" rx="2" />
+          <rect class="logo-hl" x="12.5" y="12.5" width="9" height="9" rx="2" />
+          <rect x="24" y="12.5" width="9" height="9" rx="2" />
+          <rect x="1" y="24" width="9" height="9" rx="2" />
+          <rect x="12.5" y="24" width="9" height="9" rx="2" />
+          <rect x="24" y="24" width="9" height="9" rx="2" />
+        </svg>
+        <div>
+          <h1>Tessera</h1>
+          <p class="tagline">Type and speak with small face movements</p>
+        </div>
+      </div>
+      <div class="header-tools">
+        <p id="tracking-badge" class="tracking-badge" data-state="off" role="status" aria-live="polite">
+          <span class="dot" aria-hidden="true"></span><span class="badge-text">Camera off</span>
+        </p>
+        <label class="theme-picker">
+          <span class="visually-hidden">Color theme</span>
+          <select id="theme" aria-label="Color theme">
+            <option value="auto">Theme: Auto</option>
+            <option value="light">Theme: Light</option>
+            <option value="dark">Theme: Dark</option>
+          </select>
+        </label>
+      </div>
+    </header>
+    <p class="privacy-bar" role="note">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1Zm2 0h6V7a3 3 0 0 0-6 0v3Z" /></svg>
+      <span><strong>Private by design.</strong> Your camera video is processed only inside this browser tab. No video or images are recorded, stored, or sent anywhere.</span>
+    </p>
+    <nav class="app-nav" aria-label="Steps">
+      <div class="nav-steps">
+        <button data-screen="setup"><span class="step-num" aria-hidden="true">1</span> Camera check</button>
+        <button data-screen="calibrate"><span class="step-num" aria-hidden="true">2</span> Calibrate</button>
+        <button data-screen="talk"><span class="step-num" aria-hidden="true">3</span> Talk</button>
+      </div>
+      <div class="nav-extra">
         <button data-screen="facemap">Face map</button>
         <button data-screen="settings">Settings</button>
-      </nav>
-    </header>
+      </div>
+    </nav>
     <div class="layout">
       <aside class="camera-panel" aria-label="Camera">
+        <h2 class="panel-title">Camera</h2>
         <div class="video-wrap">
           <video id="video" playsinline muted aria-label="Your camera preview (mirrored)"></video>
           <p id="replay-label" class="replay-label" hidden>Replaying a recording · camera off</p>
         </div>
-        <button id="start" class="big-button">Start camera</button>
+        <button id="start" class="big-button wide">Start camera</button>
         <p id="status" role="status" aria-live="polite">Press “Start camera”. Your browser will ask for permission.</p>
         <ul class="checks" aria-live="polite">
           <li id="face-indicator">Face: not started</li>
@@ -38,6 +75,9 @@
       </aside>
       <main id="screen" tabindex="-1"></main>
     </div>
+    <footer class="app-footer">
+      <p>Tessera is an assistive prototype, not a medical device, and not an emergency system.</p>
+    </footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

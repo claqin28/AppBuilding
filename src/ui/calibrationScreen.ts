@@ -65,6 +65,7 @@ export class CalibrationScreen implements Screen {
 
   unmount(): void {
     this.mounted = false;
+    this.ctx.setActivity(null);
     this.control = "stop";
     this.unsub?.();
     this.unsub = null;
@@ -187,6 +188,7 @@ export class CalibrationScreen implements Screen {
   private async run(gestures: GestureId[]): Promise<void> {
     if (this.running) return;
     this.running = true;
+    this.ctx.setActivity("calibrating");
     this.control = "run";
     this.stopMessage = null;
     this.lastFrame = null;
@@ -287,6 +289,7 @@ export class CalibrationScreen implements Screen {
       this.unsub?.();
       this.unsub = null;
       this.running = false;
+      this.ctx.setActivity(null);
       if (e instanceof Interrupt && e.kind === "stop") {
         this.ctx.notify(this.stopMessage ?? "Calibration stopped. Nothing was saved.", this.stopMessage !== null);
         if (this.mounted) this.renderIntro();
@@ -299,6 +302,7 @@ export class CalibrationScreen implements Screen {
     this.unsub?.();
     this.unsub = null;
     this.running = false;
+    this.ctx.setActivity(null);
     const durationMs = performance.now() - t0;
     rec.mark("calibration:end", performance.now());
     rec.setMeta("durationMs", Math.round(durationMs));

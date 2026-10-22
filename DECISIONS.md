@@ -481,3 +481,47 @@ The app is a web app either way; React would only have changed how the screens a
 written. The earlier rules still apply in framework-free form: signal-processing code
 has no UI imports, and the camera loop runs on requestAnimationFrame, separate from
 the screens.
+
+## Visual redesign (2026-10-22)
+
+The owner asked for a nicer-looking front end. What changed and why:
+- **Light and dark themes.** They follow the computer's setting, with a header switch
+  (Auto / Light / Dark) that's remembered. Every color is a named token in
+  `src/styles.css`, defined once per theme.
+- **Contrast is checked by a script, not by eye.** `npm run check:contrast`
+  (`scripts/check-contrast.mjs`) reads the tokens from the CSS and checks WCAG
+  contrast in both themes:
+  - body text ≥ 7:1
+  - secondary text, button text, and error text ≥ 4.5:1
+  - borders, focus rings, and bars ≥ 3:1
+
+  All 30 checks pass. It also runs in the GitHub publish workflow, so a color change
+  that breaks contrast can't be published.
+- **The highlighted key's outline** is checked against the row around it, not against
+  the key's own yellow, since separating the key from its row is the outline's job.
+  The outline is 17:1 in light and 14:1 in dark.
+- **Identity:** the logo is a 3×3 grid of mosaic tiles with one highlighted, like the
+  scanning keyboard. A *tessera* is a mosaic tile. It's inline SVG, with no image files
+  and no fonts downloaded (system fonts only), so there are still zero outside
+  requests.
+- **The always-visible tracking badge** (a safety-rule item) sits in the header:
+  - Camera off → No face → Paused → Calibrating → Tracking, in that priority order, so
+    "No face" always wins.
+  - Each state has its own dot shape (circle, square, pause bars) plus text, so it
+    never depends on color.
+  - The calibration and Talk screens report their state through `ctx.setActivity()`.
+- **Navigation:** numbered steps (1 Camera check, 2 Calibrate, 3 Talk), with Face map
+  and Settings kept apart. There's a skip link and a footer saying "not a medical
+  device, not an emergency system".
+- **Unchanged:** big targets (52–64 px), no animations or transitions at all, and the
+  same screen behavior. The 3D view stays dark in both themes, because its colors were
+  validated against that dark background.
+- Small fix: the "Press Start camera" hint now disappears once the camera is running.
+
+Tested in headless Chrome, in both themes:
+- screenshots of every screen
+- the badge going Tracking → No face → Paused with a replayed recording
+- the highlighted-key style
+- typing via replay still works
+- the face map still lazy-loads Three.js
+- no outside requests and no page errors

@@ -57,6 +57,13 @@ optional local profiles stored only in this browser, a 3D "movement map" of the 
 (a prototype visualization, not a clinical assessment), an editable quick-phrase list,
 local share/export, word prediction, practice games, and offline install (PWA).
 
+## Look and accessibility
+
+Light and dark themes (following your computer's setting, or chosen in the header).
+There's an always-visible status badge (Tracking / No face / Paused / Calibrating), big
+buttons, and no animation or flashing. Text and indicator contrast is checked
+automatically (`npm run check:contrast`) on every publish.
+
 ## Supported devices
 
 **Supported and tested target:** desktop Chrome on a laptop with its built-in webcam.
