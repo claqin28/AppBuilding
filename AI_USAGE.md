@@ -102,5 +102,15 @@ record of which parts were generated and which parts I decided or wrote.
 - The design of the face in the logo (which tiles are eyes, cheeks, mouth) was
   AI-generated too.
 
+### Tech-style redesign and geometric face logo (2026-10-22)
+- The ideas were mine: a low-poly triangle face like the 3D mesh, triangles that click
+  together, and the reference site's look (from my screenshot).
+- AI-generated: `src/viz/delaunay.ts`, `src/viz/logoMesh.ts`, `src/ui/faceLogo.ts`
+  (replacing `src/ui/mosaic.ts`), `tests/delaunay.test.ts`, `tests/logoMesh.test.ts`,
+  the restyle of `src/styles.css`, the new welcome layout in `src/ui/onboarding.ts`,
+  and the font choice (Inter / Inter Tight).
+- The Delaunay triangulation and point sampling were written for this project from
+  the textbook descriptions of the algorithms, not copied from another project.
+
 ## Third-party code and assets (neither AI nor me)
 - `@mediapipe/tasks-vision` library and `face_landmarker.task` model, © Google, Apache-2.0.

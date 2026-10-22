@@ -3,6 +3,9 @@
  * The real logic lives in src/signal and src/keyboard (pure, tested) and
  * src/vision (camera + MediaPipe). Screens live in src/ui.
  */
+// Fonts are bundled with the app (served from this site), not loaded from Google.
+import "@fontsource-variable/inter";
+import "@fontsource-variable/inter-tight";
 import "./styles.css";
 import { checkPosition, faceBoxFromLandmarks } from "./signal/quality";
 import type { Trace } from "./signal/trace";
@@ -13,7 +16,7 @@ import { ResultsScreen } from "./ui/resultsScreen";
 import { SettingsScreen } from "./ui/settingsScreen";
 import { SetupScreen } from "./ui/setupScreen";
 import { TalkScreen } from "./ui/talkScreen";
-import { mosaicLogo, replayMosaic } from "./ui/mosaic";
+import { faceLogo, replayLogo } from "./ui/faceLogo";
 import { Onboarding } from "./ui/onboarding";
 import { renderProfileMenu } from "./ui/profileMenu";
 import { clearLegacy, readLegacy } from "./storage/legacy";
@@ -40,9 +43,9 @@ const cameraPlaceholder = $("camera-placeholder");
 const placeholderText = $("camera-placeholder-text");
 
 // The logo in the header (static) and in the empty camera panel (animates while loading).
-$("logo").replaceChildren(mosaicLogo({ size: 48, label: "Tessera logo" }));
-const placeholderMosaic = mosaicLogo({ size: 112 });
-cameraPlaceholder.prepend(placeholderMosaic);
+$("logo").replaceChildren(faceLogo({ size: 48, label: "Tessera logo" }));
+const placeholderLogo = faceLogo({ size: 112 });
+cameraPlaceholder.prepend(placeholderLogo);
 
 /** MediaPipe's landmark index for the tip of the nose. */
 const NOSE_TIP = 1;
@@ -132,7 +135,7 @@ function setSource(source: FrameSource): void {
 async function startCamera(): Promise<boolean> {
   startBtn.disabled = true;
   placeholderText.textContent = "Loading the face model…";
-  replayMosaic(placeholderMosaic);
+  replayLogo(placeholderLogo);
   try {
     const cam = new CameraTracker(video);
     await cam.start((msg) => notify(msg));
@@ -346,6 +349,8 @@ const onboarding = new Onboarding(onboardingRoot, {
     show("setup");
   },
 });
+
+$("header-signup").addEventListener("click", () => onboarding.showNickname());
 
 function enterApp(): void {
   document.body.classList.remove("is-onboarding");

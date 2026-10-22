@@ -13,7 +13,7 @@
 import type { PersistenceResult } from "../storage/profileDb";
 import { MAX_NICKNAME } from "../storage/schema";
 import { h } from "./dom";
-import { mosaicLogo } from "./mosaic";
+import { faceLogo } from "./faceLogo";
 
 export interface OnboardingActions {
   /** Profiles already saved on this device ("Welcome back"). */
@@ -42,32 +42,12 @@ export class Onboarding {
 
   async showWelcome(): Promise<void> {
     const profiles = await this.actions.listProfiles().catch(() => []);
-    this.render(
-      h(
-        "div",
-        { class: "ob-hero" },
-        mosaicLogo({ size: 168, animate: true, label: "Tessera logo: a face made of mosaic tiles" }),
-        h(
-          "div",
-          {},
-          h("h2", { class: "ob-title" }, "Welcome to Tessera"),
-          h(
-            "p",
-            { class: "ob-lead" },
-            "Type and speak messages using small face movements and a webcam. Tessera finds the movements that work best for you, then uses them to control an on-screen keyboard.",
-          ),
-        ),
-      ),
-      h(
-        "ul",
-        { class: "ob-features" },
-        feature("Finds your best movements", "A short calibration tests movements like raising your eyebrows or closing one eye, and picks the ones that work reliably for you."),
-        feature("Type and speak", "Build a message on a scanning keyboard and have it spoken aloud, or pick a quick phrase."),
-        feature("Private by design", "Everything runs in this browser tab. Your camera video never leaves your device."),
-      ),
+    const start = h(
+      "section",
+      { class: "ob-section", id: "ob-start", "aria-labelledby": "ob-start-title", tabindex: "-1" },
       profiles.length
         ? h(
-            "section",
+            "div",
             { class: "ob-returning", "aria-label": "Profiles on this device" },
             h("h3", {}, "Welcome back"),
             h(
@@ -79,7 +59,7 @@ export class Onboarding {
             ),
           )
         : "",
-      h("h3", {}, "How do you want to start?"),
+      h("h3", { id: "ob-start-title" }, "How do you want to start?"),
       h(
         "div",
         { class: "ob-choices" },
@@ -102,17 +82,55 @@ export class Onboarding {
           },
         ),
       ),
+      h("p", { class: "hint" }, "Setting this up for someone else? Every step works with a mouse, and no typing is needed."),
+    );
+    const getStarted = h("button", { class: "pill-button" }, "Get started");
+    getStarted.addEventListener("click", () => {
+      start.scrollIntoView({ block: "start" });
+      start.focus();
+    });
+    this.root.replaceChildren(
       h(
-        "p",
-        { class: "hint" },
-        "Setting this up for someone else? Every step works with a mouse, and no typing is needed.",
-      ),
-      h(
-        "p",
-        { class: "hint" },
-        "Tessera is an assistive prototype, not a medical device. If someone's speech is reliable, voice control may work better; Tessera is for when it isn't.",
+        "div",
+        { class: "ob-welcome" },
+        h(
+          "div",
+          { class: "hero" },
+          h(
+            "section",
+            { class: "hero-card hero-text" },
+            h("h2", { class: "display" }, "Type and speak with small face movements."),
+            h(
+              "p",
+              { class: "lead" },
+              "Tessera finds the face movements that work best for you, then turns them into an on-screen keyboard you control with your face. For people who can't rely on their hands or their voice.",
+            ),
+            getStarted,
+          ),
+          h(
+            "section",
+            { class: "hero-card hero-visual", "aria-label": "Tessera logo" },
+            h("span", { class: "chip" }, "Calibrated to you · runs on your device"),
+            faceLogo({ size: 360, animate: true, label: "Tessera logo: a geometric face made of triangles" }),
+          ),
+        ),
+        h(
+          "ul",
+          { class: "ob-features" },
+          feature("Finds your best movements", "A short calibration tests movements like raising your eyebrows or closing one eye, and picks the ones that work reliably for you."),
+          feature("Type and speak", "Build a message on a scanning keyboard and have it spoken aloud, or pick a quick phrase."),
+          feature("Private by design", "Everything runs in this browser tab. Your camera video never leaves your device."),
+        ),
+        start,
+        h(
+          "p",
+          { class: "hint" },
+          "If someone's speech is reliable, voice control may work better. Tessera is for when it isn't.",
+        ),
       ),
     );
+    this.root.focus();
+    window.scrollTo(0, 0);
   }
 
   /** Step: choose a nickname (optional; suggestions mean no typing is needed). */

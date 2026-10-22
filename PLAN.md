@@ -78,9 +78,9 @@ Audited 2026-10-19 by re-running every check on the current code (see DECISIONS)
 V1 are part of finishing M1–M3 to the locked spec). Then **G → V2a → P → V2b**. Cut M9
 before any of these.
 
-**Waiting on the owner:** screenshots or font names of the reference site
-(tesseractai.web.app) for the layout/font restyle. That site is blocked from the dev
-environment.
+**Restyle done (2026-10-22)** from the owner's screenshot of tesseractai.web.app:
+style only, with self-hosted open-licensed fonts (see DECISIONS.md). The exact font
+the reference uses is unconfirmed.
 
 **Changes (2026-10-22, owner's decisions):** V2a, the 3D head, was built *before* M4
 so the owner could see it first. React is dropped; the UI stays plain TypeScript.

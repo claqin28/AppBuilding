@@ -503,7 +503,7 @@ The owner asked for a nicer-looking front end. What changed and why:
 - **Identity:** the logo is a 3×3 grid of mosaic tiles with one highlighted, like the
   scanning keyboard. A *tessera* is a mosaic tile. It's inline SVG, with no image files
   and no fonts downloaded (system fonts only), so there are still zero outside
-  requests.
+  requests. *(Replaced 2026-10-22: see "Tech-style redesign and geometric face logo".)*
 - **The always-visible tracking badge** (a safety-rule item) sits in the header:
   - Camera off → No face → Paused → Calibrating → Tracking, in that priority order, so
     "No face" always wins.
@@ -564,7 +564,8 @@ leak into the next. Saving a guest session to a profile happens without a reload
 I didn't add a password, because without a server it could only be checked on the
 device, which protects little and could lock the owner out.
 
-**Mosaic logo** (`src/ui/mosaic.ts`):
+**Mosaic logo** (`src/ui/mosaic.ts`; *replaced the same day by the geometric face
+logo, see the next section*):
 - A 9×9 tile face (eyes, cheeks, smile) as inline SVG, with no image files.
 - A seeded shuffle decides the order the tiles appear, plus a slight tilt per tile for
   a hand-laid look. The "click into place" animation plays once (about 1.4 s).
@@ -584,6 +585,64 @@ typing is required (nickname suggestions, or leave it blank for "Profile 1").
   dev environment, so I'm waiting on screenshots or font names. If its font is
   open-licensed, it will be stored in the app itself (no Google Fonts or other font
   CDN, which would break the no-network rule) and credited in ATTRIBUTION. I'll copy
-  the *style*, not their code, logo, or text.
+  the *style*, not their code, logo, or text. *(Done 2026-10-22 from the owner's
+  screenshot: see the next section.)*
 - **The guest one-time report** waits for M4, since there are no evaluation metrics yet.
 - **Profile history charts and backup export/import** are part of step P and not built.
+
+## Tech-style redesign and geometric face logo (2026-10-22)
+
+The owner asked for: a logo that is "a face that looks like the 3D mesh but the 2D
+version", made of triangles that click together, not a smiley; and a sleeker
+"tech web app" look, using a screenshot of tesseractai.web.app as the reference.
+
+**What was taken from the reference: the style only.** Light gray page, big white
+cards with very round corners, a split hero (huge, heavy, tightly spaced headline on
+the left, a visual on the right), black pill buttons, and a pill "sign up" button in
+the header. No code, images, logo, or text were copied (the site can't even be
+reached from the dev environment; I worked from the screenshot).
+
+**Fonts:** Inter (body) and Inter Tight (headings), both SIL Open Font License 1.1.
+- **I can't confirm what font the reference site uses.** Inter Tight is the closest
+  free match I know of to its heavy, tight headlines. If the owner finds the real font
+  name and it's open-licensed, it can be swapped in.
+- **Self-hosted, never from a font CDN:** the npm packages (`@fontsource-variable/*`,
+  pinned to 5.3.0) are bundled by Vite and served from the app's own site, so the
+  no-network rule still holds (tested: zero outside requests in both themes). Only
+  the Latin files actually load (about 48 KB each); the other alphabets are fetched
+  only if that text appears.
+- The OFL requires the license to travel with the fonts, so both license texts are
+  published at `licenses/`.
+- Headline letter-spacing was loosened after a screenshot showed words running
+  together ("speakwith"). Tight is the look; unreadable isn't.
+
+**Logo** (`src/viz/logoMesh.ts` for the geometry, `src/ui/faceLogo.ts` for drawing):
+- **Points:** first the features, taken from MediaPipe's own connection sets (face
+  outline, eyes, eyebrows, outer lips, thinned out), plus a few nose points. Then the
+  rest of the face is filled with *farthest-point sampling*: keep adding the standard
+  face point farthest from everything chosen, until none is farther than a set
+  spacing.
+- **Why sampling instead of hand-picking:** my first version hand-picked ~35 extra
+  points. Its triangles fanned out from the eyes and mouth into long thin slivers that
+  looked noisy. Even spacing removed them: the full logo now has 104 points and 170
+  triangles, and **no angle under 10°** (a unit test enforces this).
+- **Triangles:** Delaunay triangulation (Bowyer–Watson, `src/viz/delaunay.ts`, own
+  code with tests). It's the standard way to avoid slivers, since no point may fall
+  inside another triangle's circumcircle.
+- **Shading:** each triangle is shaded by which way it faces in 3D (from the dropped
+  depth), lit from the upper left. On a light page, lit faces use less ink; on a dark
+  page, more light, so the face looks lit from the same side in both themes. Eyes use
+  the brand blue, and the lips are darker than any skin triangle, so it reads as a
+  face rather than a blank mask.
+- **Small sizes:** below 96 px a coarser mesh is used (49 points, 78 triangles), and
+  the eyes get a same-color outline so they still show in the 48 px header logo.
+- **Animation:** the triangles fly in from slightly outside and click together, once
+  (about 1.3 s): on the welcome screen and as the camera placeholder while the model
+  loads. Each piece appears once (no flashing), and reduced motion turns it off
+  (tested: `animation-name: none`).
+
+**Not done:** the inside screens (calibration, results, Talk) only got the new
+tokens, fonts, and pill buttons, not a layout redesign. They're functional screens
+used under time pressure, and big, plain, predictable controls matter more there than
+looking like a landing page.
+

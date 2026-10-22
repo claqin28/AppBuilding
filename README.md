@@ -66,8 +66,10 @@ local share/export, word prediction, practice games, and offline install (PWA).
 ## Look and accessibility
 
 Light and dark themes (following your computer's setting, or chosen in the header).
-There's an always-visible status badge (Tracking / No face / Paused / Calibrating), big
-buttons, and no animation or flashing. Text and indicator contrast is checked
+There's an always-visible status badge (Tracking / No face / Paused / Calibrating) and
+big buttons. The only animation is the logo assembling once; nothing flashes, and
+your system's "reduce motion" setting turns it off. Fonts (Inter, Inter Tight) are
+bundled with the app, not loaded from a font service. Text and indicator contrast is checked
 automatically (`npm run check:contrast`) on every publish.
 
 ## Supported devices
@@ -144,7 +146,8 @@ src/signal/    pure signal processing (no DOM, no camera), unit tested
   trace.ts       record / save / load / replay facial-signal recordings
   quality.ts     position and lighting checks
   movementMap.ts calibration numbers -> face-region colors (for the 3D map)
-src/viz/       3D face map: regions, standard face data, Three.js renderer (lazy-loaded)
+src/viz/       3D face map: regions, standard face data, Three.js renderer (lazy-loaded);
+               logo geometry (Delaunay triangulation of the standard face)
 src/keyboard/  scanning keyboard logic (pure, unit tested)
 src/vision/    camera access + MediaPipe Face Landmarker + replay source
 src/ui/        screens (camera check, calibrate, results, talk, settings)
@@ -167,7 +170,7 @@ See `WALKTHROUGH.md` for how the main algorithms work and `DECISIONS.md` for why
 
 ## Evaluation
 
-No results yet. Unit tests (115) use **synthetic** data and only check that the code
+No results yet. Unit tests (144) use **synthetic** data and only check that the code
 does what it was designed to do. They don't show that the app works for people. This
 section will only ever contain numbers that were actually measured, labeled with who
 they were measured on.
