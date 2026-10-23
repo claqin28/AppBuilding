@@ -6,6 +6,15 @@
  * (scripts/check-contrast.mjs): body text >= 7:1, secondary text >= 4.5:1,
  * borders/indicators >= 3:1.
  *
+ * Color roles:
+ *  - Calm blue (--calm*) is for moments that can be frustrating but are nobody's
+ *    fault: setup hints, "can't see your face", pauses, movements that didn't
+ *    work, a camera that didn't start. They're clear but not alarming.
+ *  - Red (--bad) is kept for actions that delete things.
+ *  - Yellow is kept for the scanning highlight, which must be the most visible
+ *    thing on the screen.
+ *  - Green means ready / it worked.
+ *
  * Accessibility rules this file follows:
  *  - States never rely on color alone (icons, text, outlines, thick borders).
  *  - Large targets: buttons are at least 52-64px tall.
@@ -45,6 +54,15 @@
   --hl-row-bg: #fff3c4;
   --hl-row-border: #7a4f00;
   --logo-gap: #ffffff;
+  --calm: #1d5fa6;
+  --calm-soft: #e7f0fb;
+  --calm-text: #0e2c50;
+  --logo-lit: #e4eefb;
+  --logo-shadow: #6f93c6;
+  --logo-eye: #1a3459;
+  --logo-lips: #a3bde4;
+  --logo-mouth: #1a3459;
+  --logo-glint: #ffffff;
   --shadow: none;
 }
 
@@ -78,6 +96,15 @@
   --hl-row-bg: #2e2a12;
   --hl-row-border: #ffd34d;
   --logo-gap: #161618;
+  --calm: #8fbdf2;
+  --calm-soft: #11233a;
+  --calm-text: #dbe9fb;
+  --logo-lit: #c6daf4;
+  --logo-shadow: #4b6c9c;
+  --logo-eye: #0e1b30;
+  --logo-lips: #7b9bcb;
+  --logo-mouth: #0e1b30;
+  --logo-glint: #ffffff;
   --shadow: none;
 }
 @media (prefers-color-scheme: dark) {
@@ -110,6 +137,15 @@
     --hl-row-bg: #2e2a12;
     --hl-row-border: #ffd34d;
     --logo-gap: #161618;
+    --calm: #8fbdf2;
+    --calm-soft: #11233a;
+    --calm-text: #dbe9fb;
+    --logo-lit: #c6daf4;
+    --logo-shadow: #4b6c9c;
+    --logo-eye: #0e1b30;
+    --logo-lips: #7b9bcb;
+    --logo-mouth: #0e1b30;
+    --logo-glint: #ffffff;
     --shadow: none;
   }
 }
@@ -152,15 +188,18 @@ main:focus { outline: none; }
 .brand { display: flex; align-items: center; gap: 14px; }
 .logo { display: inline-flex; flex: none; color: var(--text); }
 
-/* Logo: low-poly face. Shades use the text color, so it fits both themes;
-   thin gaps between triangles use the background color. */
-.face-logo polygon { fill: currentColor; fill-opacity: var(--op-light, 0.5); stroke: var(--logo-gap); stroke-width: 0.06; stroke-linejoin: round; }
-:root[data-theme="dark"] .face-logo polygon:not(.eye) { fill-opacity: var(--op-dark, 0.5); }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .face-logo polygon:not(.eye) { fill-opacity: var(--op-dark, 0.5); }
+/* Logo: low-poly face in soft blues. Each piece's --t (0 = shadow, 1 = lit) mixes
+   between two tokens; thin gaps between pieces use the card color, like grout. */
+.face-logo polygon {
+  fill: var(--logo-shadow);
+  fill: color-mix(in oklab, var(--logo-lit) calc(var(--t, 0.5) * 100%), var(--logo-shadow));
+  stroke: var(--logo-gap); stroke-width: 0.08; stroke-linejoin: round;
 }
-/* The same-color outline makes the eyes a little bolder, so they still show at 48 px. */
-.face-logo polygon.eye { fill: var(--brand); fill-opacity: 1; stroke: var(--brand); stroke-width: 0.22; }
+/* Same-color outlines make the eyes and mouth solid shapes, bold enough to show at 48 px. */
+.face-logo polygon.eye { fill: var(--logo-eye); stroke: var(--logo-eye); stroke-width: 0.22; }
+.face-logo polygon.mouth { fill: var(--logo-lips); stroke: var(--logo-lips); stroke-width: 0.1; }
+.face-logo polygon.smile { fill: var(--logo-mouth); stroke: var(--logo-mouth); stroke-width: 0.06; }
+.face-logo polygon.glint { fill: var(--logo-glint); stroke: none; }
 .face-logo.assemble polygon {
   transform-box: fill-box;
   transform-origin: center;
@@ -183,10 +222,10 @@ main:focus { outline: none; }
 .tracking-badge .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--border-strong); }
 .tracking-badge[data-state="tracking"] { border-color: var(--ok); background: var(--ok-soft); }
 .tracking-badge[data-state="tracking"] .dot { background: var(--ok); }
-.tracking-badge[data-state="noface"] { border-color: var(--bad); background: var(--bad-soft); }
-.tracking-badge[data-state="noface"] .dot { background: var(--bad); border-radius: 2px; } /* square = problem */
-.tracking-badge[data-state="paused"] { border-color: var(--warn); background: var(--warn-soft); }
-.tracking-badge[data-state="paused"] .dot { background: transparent; border-left: 5px solid var(--warn); border-right: 5px solid var(--warn); border-radius: 0; } /* pause bars */
+.tracking-badge[data-state="noface"] { border-color: var(--calm); background: var(--calm-soft); color: var(--calm-text); }
+.tracking-badge[data-state="noface"] .dot { background: var(--calm); border-radius: 2px; } /* square = control stopped */
+.tracking-badge[data-state="paused"] { border-color: var(--calm); background: var(--calm-soft); color: var(--calm-text); }
+.tracking-badge[data-state="paused"] .dot { background: transparent; border-left: 5px solid var(--calm); border-right: 5px solid var(--calm); border-radius: 0; } /* pause bars */
 .tracking-badge[data-state="calibrating"] { border-color: var(--brand); background: var(--accent-soft); }
 .tracking-badge[data-state="calibrating"] .dot { background: var(--brand); }
 
@@ -281,8 +320,8 @@ body.is-onboarding .onboarding { display: block; }
 .ob-list { padding-left: 1.2em; display: grid; gap: 10px; font-size: 1.05rem; }
 .ob-label { display: block; font-weight: 700; margin: 12px 0 6px; }
 #ob-nickname { width: min(420px, 100%); min-height: 56px; padding: 10px 18px; font-size: 1.2rem; border: 2px solid var(--border-strong); border-radius: 999px; background: var(--surface); }
-.ob-error { color: var(--bad); font-weight: 700; min-height: 1.2em; }
-.ob-warning { padding: 12px 16px; border-radius: 12px; border-left: 6px solid var(--warn); background: var(--warn-soft); }
+.ob-error { color: var(--calm); font-weight: 700; min-height: 1.2em; }
+.ob-warning { padding: 12px 16px; border-radius: 12px; border-left: 6px solid var(--calm); background: var(--calm-soft); color: var(--calm-text); }
 
 /* ---------- Profile menu (header) --------------------------------------------- */
 
@@ -305,9 +344,9 @@ body.is-onboarding .onboarding { display: block; }
 
 /* ---------- Camera placeholder (before the camera starts) --------------------- */
 
-.camera-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--surface-2); }
+.camera-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--calm-soft); }
 .camera-placeholder[hidden] { display: none; }
-.camera-placeholder p { margin: 0; color: var(--muted); font-weight: 600; }
+.camera-placeholder p { margin: 0; color: var(--calm-text); font-weight: 600; }
 
 .app-footer { padding: 4px 28px 28px; color: var(--muted); font-size: 0.85rem; }
 
@@ -340,13 +379,14 @@ input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; accent-
 /* ---------- Status text, checks, callouts ----------------------------------- */
 
 #status { margin-top: 12px; }
-#status.error { color: var(--bad); font-weight: 700; }
+#status.error { color: var(--calm); font-weight: 700; }
 .checks { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 8px; }
 .checks li { padding: 8px 12px; border-radius: 10px; background: var(--surface-2); border-left: 6px solid var(--border-strong); }
 .checks li.ok { border-left-color: var(--ok); }
-.checks li.bad { border-left-color: var(--bad); background: var(--bad-soft); }
+.checks li.adjust { border-left-color: var(--calm); background: var(--calm-soft); color: var(--calm-text); }
 .perf, .hint { color: var(--muted); font-size: 0.92rem; }
 .callout { background: var(--surface-2); border-left: 6px solid var(--brand); padding: 12px 16px; border-radius: 14px; }
+.callout.calm { background: var(--calm-soft); border-left-color: var(--calm); color: var(--calm-text); }
 .toggle { display: inline-flex; gap: 10px; align-items: center; margin: 8px 0; cursor: pointer; min-height: 44px; }
 fieldset { border: 2px solid var(--border); border-radius: 12px; padding: 8px 14px 12px; margin: 0; }
 legend { padding: 0 6px; font-weight: 700; }
@@ -365,17 +405,18 @@ legend { padding: 0 6px; font-weight: 700; }
 
 .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .check-item { display: flex; gap: 10px; align-items: center; min-height: 44px; cursor: pointer; }
+/* Calm blue while resting and getting ready; green on "go". */
 .cal-card {
-  border: 4px solid var(--border); border-radius: 28px; padding: 32px; min-height: 260px;
-  text-align: center; background: var(--surface-2);
+  border: 4px solid var(--calm-soft); border-radius: 28px; padding: 32px; min-height: 260px;
+  text-align: center; background: var(--calm-soft); color: var(--calm-text);
 }
-.cal-card[data-mode="ready"] { background: var(--warn-soft); border-color: var(--warn); }
-.cal-card[data-mode="go"] { background: var(--ok-soft); border-color: var(--ok); }
+.cal-card[data-mode="ready"] { border-color: var(--calm); }
+.cal-card[data-mode="go"] { background: var(--ok-soft); border-color: var(--ok); color: var(--text); }
 .cal-prompt { font-size: 2.3rem; font-weight: 800; margin: 0 0 10px; }
 .cal-sub { font-size: 1.15rem; margin: 0; }
 .cal-meter { max-width: 440px; margin: 20px auto 0; }
 .cal-meter .bs-track { height: 22px; border-radius: 11px; }
-.cal-warn { color: var(--bad); font-weight: 700; min-height: 1.5em; margin-top: 10px; }
+.cal-warn { color: var(--calm); font-weight: 700; min-height: 1.5em; margin-top: 10px; }
 progress { width: 100%; height: 14px; margin-top: 14px; accent-color: var(--accent); }
 
 /* ---------- Results --------------------------------------------------------- */
@@ -383,12 +424,13 @@ progress { width: 100%; height: 14px; margin-top: 14px; accent-color: var(--acce
 .mapping { display: grid; gap: 10px; }
 .mapping-row { display: grid; grid-template-columns: 6em 1fr minmax(200px, 300px); gap: 12px; align-items: center; }
 @media (max-width: 700px) { .mapping-row { grid-template-columns: 1fr; } }
-.warnings { color: var(--bad); }
+.warnings { color: var(--calm-text); }
+.warnings:not(:empty) { background: var(--calm-soft); border-radius: 14px; padding: 10px 16px 10px 36px; }
 .result-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
 .result-card { background: var(--surface-2); border-radius: 20px; padding: 14px 16px; border-left: 8px solid var(--border-strong); }
 .result-card.good { border-left-color: var(--ok); }
-.result-card.ok { border-left-color: var(--warn); }
-.result-card.poor { border-left-color: var(--bad); }
+.result-card.ok { border-left-color: var(--calm); }
+.result-card.poor { border-left-color: var(--border-strong); } /* not used this time: neutral, not a failure */
 .result-card h4 { margin: 0; display: flex; gap: 8px; align-items: center; font-size: 1.05rem; }
 .result-card .verdict { margin: 4px 0; font-weight: 700; }
 .result-card ul { margin: 0; padding-left: 1.2em; font-size: 0.92rem; }
@@ -407,8 +449,8 @@ progress { width: 100%; height: 14px; margin-top: 14px; accent-color: var(--acce
 /* ---------- Talk ------------------------------------------------------------ */
 
 .message {
-  width: 100%; font-size: 1.7rem; padding: 14px 16px; background: var(--surface-2); color: var(--text);
-  border: 2px solid var(--border-strong); border-radius: 22px; resize: vertical;
+  width: 100%; font-size: 1.7rem; padding: 14px 16px; background: var(--calm-soft); color: var(--text);
+  border: 2px solid var(--calm); border-radius: 22px; resize: vertical;
 }
 .kb-grid { display: grid; gap: 8px; margin-top: 14px; }
 .kb-grid.dimmed { opacity: 0.4; }
@@ -425,10 +467,10 @@ progress { width: 100%; height: 14px; margin-top: 14px; accent-color: var(--acce
 .kb-key.hl-key { background: var(--highlight); color: var(--highlight-text); outline: 4px solid var(--highlight-outline); outline-offset: -2px; border-color: var(--highlight-text); }
 .kb-grid.phrases .kb-key { text-align: left; padding-left: 20px; font-size: 1.3rem; }
 .talk-status { font-weight: 600; margin-top: 10px; }
-.talk-status.bad { color: var(--bad); }
-.paused-banner { margin-top: 14px; padding: 14px 18px; border: 3px solid var(--warn); background: var(--warn-soft); border-radius: 20px; }
+.talk-status.lost { color: var(--calm); }
+.paused-banner { margin-top: 14px; padding: 14px 18px; border: 3px solid var(--calm); background: var(--calm-soft); color: var(--calm-text); border-radius: 20px; }
 .paused-banner p { margin: 0 0 8px; }
-.resume-hint { color: var(--warn); font-weight: 700; min-height: 1.4em; }
+.resume-hint { color: var(--calm-text); font-weight: 700; min-height: 1.4em; }
 .helper-panel { margin-top: 18px; background: var(--surface-2); border-radius: 20px; padding: 10px 16px; }
 .helper-panel summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
 .phrase-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -451,7 +493,7 @@ progress { width: 100%; height: 14px; margin-top: 14px; accent-color: var(--acce
 .map-label[hidden] { display: none; }
 .map-status { position: absolute; inset: 0; margin: 0; display: flex; align-items: center; justify-content: center;
   text-align: center; padding: 24px; color: #b8c0cc; }
-.map-status.corner { inset: auto 8px 8px auto; padding: 4px 10px; background: rgba(15, 17, 21, 0.9); border-radius: 6px; color: #ff8a7a; font-weight: 700; }
+.map-status.corner { inset: auto 8px 8px auto; padding: 4px 10px; background: rgba(15, 17, 21, 0.9); border-radius: 6px; color: #9cc6f4; font-weight: 700; }
 .map-status[hidden] { display: none; }
 .map-legend { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 16px; }
 .swatch { display: inline-block; width: 18px; height: 18px; border-radius: 4px; margin-right: 6px; vertical-align: -3px; border: 1px solid var(--border-strong); }

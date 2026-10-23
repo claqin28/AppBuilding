@@ -36,9 +36,22 @@ const checks = [
   ["ok", "surface", UI, "'ok' borders"], ["bad", "surface", UI, "'problem' borders"], ["warn", "surface", UI, "'paused/ready' borders"],
   ["hl-row-border", "surface", UI, "highlighted row border"], ["highlight-outline", "hl-row-bg", UI, "outline around highlighted key vs. its row"],
   ["highlight", "hl-row-bg", 1.0, "(info) highlighted key vs. its row"],
+  // Calm blue: setup hints, "can't see your face", pauses, the message box, calibration card.
+  ["calm-text", "calm-soft", 7, "text in calm boxes"], ["text", "calm-soft", 7, "message text"],
+  ["calm", "calm-soft", TEXT, "calm text / borders in calm boxes"], ["calm", "surface", TEXT, "calm text on cards"],
+  ["calm", "ok-soft", TEXT, "face-lost note on the green 'go' card"], ["calm", "bg", UI, "calm borders on page"],
+  // Logo: the eyes and mouth must stand out from the face.
+  ["logo-eye", "logo-lit", UI, "logo eyes vs. lit face"], ["logo-mouth", "logo-lips", UI, "logo smile line vs. lips"],
+  ["logo-glint", "logo-eye", UI, "eye highlight vs. eye"],
 ];
 
 let failed = 0;
+
+// The dark tokens are written twice (picked dark, and Auto on a dark system). They must match.
+const autoDark = tokens(':root:not([data-theme="light"])');
+for (const [k, v] of Object.entries(themes.dark)) {
+  if (autoDark[k] !== v) { console.log(`  FAIL dark token --${k} differs between the two dark blocks (${v} vs ${autoDark[k]})`); failed++; }
+}
 for (const [name, t] of Object.entries(themes)) {
   console.log(`\n${name} theme`);
   for (const [fg, bg, min, what] of checks) {

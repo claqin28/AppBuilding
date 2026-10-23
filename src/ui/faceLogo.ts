@@ -5,12 +5,14 @@
  * The triangles come from src/viz/logoMesh.ts (feature points plus evenly
  * spread fill points, joined by Delaunay triangulation). Here we:
  *   - shade each triangle by which way it faces in 3D, as if lit from the
- *     upper left, so a flat drawing looks sculpted. On a light page, lit
- *     triangles use LESS ink (paler); on a dark page, lit triangles use MORE
- *     light (brighter), so the face looks lit from the same side in both themes.
- *   - fill the eye triangles with the brand accent color, and draw the lips
- *     darker than the skin in both themes.
- * Logos smaller than 96 px use the "small" mesh (fewer, bigger triangles).
+ *     upper left, so a flat drawing looks sculpted. Shades are a soft blue
+ *     range (CSS tokens --logo-lit to --logo-shadow), with a little seeded
+ *     variation per piece so it looks like hand-laid mosaic tiles.
+ *   - fill the eyes with dark blue and add a small white highlight to each,
+ *     tint the lips a little darker than the skin, and draw a thin smile line
+ *     where the lips meet. Together these make the face look friendly.
+ * Logos smaller than 96 px use the "small" mesh (fewer, bigger triangles)
+ * and skip the eye highlights, which would be too small to see.
  *
  * With `animate`, the triangles fly in from slightly outside and "click"
  * together, once (~1.3 s). Each piece appears once (no flashing), and
@@ -23,7 +25,8 @@ const ANIM_TOTAL_MS = 1100;
 
 interface LogoTri {
   points: string;
-  shade: number;
+  /** 0 = in shadow, 1 = fully lit (relative to the rest of the face). */
+  tone: number;
   eye: boolean;
   mouth: boolean;
   /** Direction to fly in from (unit-ish), and the order it appears in. */
@@ -32,9 +35,17 @@ interface LogoTri {
   order: number;
 }
 
-const cache = new Map<LogoDetail, { tris: LogoTri[]; viewBox: string }>();
+interface BuiltLogo {
+  tris: LogoTri[];
+  /** One small highlight triangle per eye. */
+  glints: string[];
+  smile: string;
+  viewBox: string;
+}
 
-function build(detail: LogoDetail): { tris: LogoTri[]; viewBox: string } {
+const cache = new Map<LogoDetail, BuiltLogo>();
+
+function build(detail: LogoDetail): BuiltLogo {
   const hit = cache.get(detail);
   if (hit) return hit;
   const mesh = buildLogoMesh(detail);
@@ -53,6 +64,7 @@ function build(detail: LogoDetail): { tris: LogoTri[]; viewBox: string } {
 
   // Light from the upper left, slightly toward the viewer.
   const L = normalize([-0.3, 0.45, 0.85]);
+  const jitter = seeded(5);
   const out: LogoTri[] = mesh.tris.map(([a, b, c], i) => {
     const [A, B, C] = [P3[a], P3[b], P3[c]];
     let n = normalize(cross(sub(B, A), sub(C, A)));
@@ -63,7 +75,7 @@ function build(detail: LogoDetail): { tris: LogoTri[]; viewBox: string } {
     const dist = Math.hypot(mx - cx, my - cy) || 1;
     return {
       points: [a, b, c].map((k) => `${P2[k][0].toFixed(2)},${P2[k][1].toFixed(2)}`).join(" "),
-      shade,
+      tone: shade + (jitter() - 0.5) * 0.08, // rescaled to 0..1 below
       eye: mesh.eye[i],
       mouth: mesh.mouth[i],
       dx: (mx - cx) / dist,
@@ -71,6 +83,24 @@ function build(detail: LogoDetail): { tris: LogoTri[]; viewBox: string } {
       order: 0,
     };
   });
+  // Stretch the tones to the full lit..shadow range, so no part of the face is
+  // darker than --logo-shadow (a gentle range instead of a harsh black side).
+  const skin = out.filter((t) => !t.eye && !t.mouth).map((t) => t.tone);
+  const [lo, hi] = [Math.min(...skin), Math.max(...skin)];
+  for (const t of out) t.tone = Math.min(1, Math.max(0, (t.tone - lo) / (hi - lo || 1)));
+
+  // Eye highlights: a small triangle in the upper left of each eye (toward the light).
+  const glints = mesh.eyes.map(({ cx, cy, w, h }) => {
+    const [gx, gy, r] = [cx - w * 0.12, cy - h * 0.12, Math.min(w, h) * 0.28];
+    return [
+      [gx - r * 0.6, gy + r * 0.5],
+      [gx + r * 0.7, gy - r * 0.2],
+      [gx - r * 0.1, gy - r * 0.7],
+    ]
+      .map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`)
+      .join(" ");
+  });
+
   // Shuffled appearance order, seeded so it looks the same every time.
   // (Fisher-Yates shuffle: swap each item with a random earlier one.)
   const r = seeded(11);
@@ -80,13 +110,15 @@ function build(detail: LogoDetail): { tris: LogoTri[]; viewBox: string } {
     [idx[i], idx[j]] = [idx[j], idx[i]];
   }
   idx.forEach((t, k) => (out[t].order = k));
-  const built = { tris: out, viewBox: `${minX.toFixed(2)} ${minY.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}` };
+  const smile = mesh.smile.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
+  const built = { tris: out, glints, smile, viewBox: `${minX.toFixed(2)} ${minY.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}` };
   cache.set(detail, built);
   return built;
 }
 
 export function faceLogo(opts: { size: number; animate?: boolean; label?: string }): SVGSVGElement {
-  const { tris, viewBox } = build(opts.size < 96 ? "small" : "full");
+  const small = opts.size < 96;
+  const { tris, glints, smile, viewBox } = build(small ? "small" : "full");
   const svg = document.createElementNS(SVG_NS, "svg");
   svg.setAttribute("viewBox", viewBox);
   svg.setAttribute("width", String(opts.size));
@@ -99,21 +131,29 @@ export function faceLogo(opts: { size: number; animate?: boolean; label?: string
     svg.setAttribute("aria-hidden", "true");
   }
   const step = ANIM_TOTAL_MS / tris.length;
-  for (const t of tris) {
+  // Skin first, then mouth, then eyes, so the eye and mouth outlines aren't covered.
+  const layer = (t: LogoTri) => (t.eye ? 2 : t.mouth ? 1 : 0);
+  for (const t of [...tris].sort((a, b) => layer(a) - layer(b))) {
     const poly = document.createElementNS(SVG_NS, "polygon");
     poly.setAttribute("points", t.points);
     if (t.eye) poly.classList.add("eye");
-    else if (t.mouth) {
-      // Darker than any skin triangle in both themes.
-      poly.style.setProperty("--op-light", "0.9");
-      poly.style.setProperty("--op-dark", "0.1");
-    } else {
-      poly.style.setProperty("--op-light", (0.15 + 0.75 * (1 - t.shade)).toFixed(2));
-      poly.style.setProperty("--op-dark", (0.15 + 0.75 * t.shade).toFixed(2));
-    }
+    else if (t.mouth) poly.classList.add("mouth");
+    else poly.style.setProperty("--t", t.tone.toFixed(2));
     poly.style.setProperty("--delay", `${Math.round(t.order * step)}ms`);
     poly.style.setProperty("--dx", `${(t.dx * 3).toFixed(2)}px`);
     poly.style.setProperty("--dy", `${(t.dy * 3).toFixed(2)}px`);
+    svg.append(poly);
+  }
+  // Smile line and eye highlights appear last, once the face is in place.
+  const extras = [{ points: smile, cls: "smile" }];
+  if (!small) extras.push(...glints.map((points) => ({ points, cls: "glint" })));
+  for (const { points, cls } of extras) {
+    const poly = document.createElementNS(SVG_NS, "polygon");
+    poly.setAttribute("points", points);
+    poly.classList.add(cls);
+    poly.style.setProperty("--delay", `${ANIM_TOTAL_MS}ms`);
+    poly.style.setProperty("--dx", "0px");
+    poly.style.setProperty("--dy", "0px");
     svg.append(poly);
   }
   if (opts.animate) replayLogo(svg);

@@ -67,7 +67,10 @@ local share/export, word prediction, practice games, and offline install (PWA).
 
 Light and dark themes (following your computer's setting, or chosen in the header).
 There's an always-visible status badge (Tracking / No face / Paused / Calibrating) and
-big buttons. The only animation is the logo assembling once; nothing flashes, and
+big buttons. Moments that can be frustrating but aren't anyone's fault (setup hints,
+"can't see your face", pauses, movements that didn't work) use a calm blue and say
+what to do next, instead of red warnings. Red is kept for deleting things. Whether
+this actually feels calmer hasn't been tested with anyone yet. The only animation is the logo assembling once; nothing flashes, and
 your system's "reduce motion" setting turns it off. Fonts (Inter, Inter Tight) are
 bundled with the app, not loaded from a font service. Text and indicator contrast is checked
 automatically (`npm run check:contrast`) on every publish.
@@ -170,7 +173,7 @@ See `WALKTHROUGH.md` for how the main algorithms work and `DECISIONS.md` for why
 
 ## Evaluation
 
-No results yet. Unit tests (144) use **synthetic** data and only check that the code
+No results yet. Unit tests (148) use **synthetic** data and only check that the code
 does what it was designed to do. They don't show that the app works for people. This
 section will only ever contain numbers that were actually measured, labeled with who
 they were measured on.

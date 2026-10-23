@@ -123,6 +123,13 @@ export class ResultsScreen implements Screen {
         ),
       ),
       h("h3", {}, "Every movement tested"),
+      result.gestures.some((g) => !g.usable)
+        ? h(
+            "p",
+            { class: "callout calm" },
+            "Not every movement works for every person. That's expected: Tessera only needs 1 to 3 that work for you.",
+          )
+        : "",
       h(
         "div",
         { class: "result-cards" },

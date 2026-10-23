@@ -343,7 +343,7 @@ export class CalibrationScreen implements Screen {
 
   private updateLive(): void {
     const faceLost = performance.now() - this.lastFaceT > FACE_LOST_MS;
-    this.els.warn.textContent = faceLost ? "We can't see your face. Move back into view." : "";
+    this.els.warn.textContent = faceLost ? "We can't see your face. Move back into view, or press Pause if you need a break." : "";
     const target = this.meterTarget;
     this.els.meterWrap.hidden = target === null;
     if (target && this.lastFrame?.face) {

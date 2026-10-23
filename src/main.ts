@@ -261,10 +261,11 @@ ctx.subscribe((det) => {
   }
 });
 
+/** A setup check: a tick when it's fine, otherwise an arrow pointing to the next step (calm, not an alarm). */
 function setCheck(el: HTMLElement, ok: boolean, msg: string): void {
-  el.textContent = `${ok ? "✓" : "!"} ${msg}`;
+  el.textContent = `${ok ? "✓" : "→"} ${msg}`;
   el.classList.toggle("ok", ok);
-  el.classList.toggle("bad", !ok);
+  el.classList.toggle("adjust", !ok);
 }
 
 // ----- Profiles, guest mode, onboarding ----------------------------------------

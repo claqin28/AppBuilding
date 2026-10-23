@@ -112,5 +112,19 @@ record of which parts were generated and which parts I decided or wrote.
 - The Delaunay triangulation and point sampling were written for this project from
   the textbook descriptions of the algorithms, not copied from another project.
 
+### Friendlier logo and calm blue (2026-10-23)
+- The ideas were mine: a friendlier face, and calming blue where people might get
+  frustrated.
+- AI-generated:
+  - how to make it friendly (open eyes, slight smile, smile line, eye highlights,
+    soft blue tones)
+  - which places count as frustrating, and the color roles (calm blue / red /
+    yellow / green)
+  - the reworded messages
+  - the code in `src/viz/logoMesh.ts`, `src/ui/faceLogo.ts`, `src/styles.css`,
+    `src/main.ts`, `src/ui/talkScreen.ts`, `src/ui/calibrationScreen.ts`, and
+    `src/ui/resultsScreen.ts`
+  - the new checks in `scripts/check-contrast.mjs` and `tests/logoMesh.test.ts`
+
 ## Third-party code and assets (neither AI nor me)
 - `@mediapipe/tasks-vision` library and `face_landmarker.task` model, © Google, Apache-2.0.

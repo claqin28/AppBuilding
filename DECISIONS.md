@@ -646,3 +646,73 @@ tokens, fonts, and pill buttons, not a layout redesign. They're functional scree
 used under time pressure, and big, plain, predictable controls matter more there than
 looking like a landing page.
 
+## Friendlier logo and calm blue for frustrating moments (2026-10-23)
+
+The owner asked for: a friendlier face in the logo, and "a calming blue,
+especially in the places where people might get frustrated."
+
+**Why the old logo looked unfriendly:** the standard face has a neutral mouth
+and nearly closed eyes, and the shading went from white to almost black, so
+half the face was in dark shadow. It read as a stern mask.
+
+**What changed** (`src/viz/logoMesh.ts`, `src/ui/faceLogo.ts`):
+- **Soft blue tones** instead of gray to black. Shades are stretched between two
+  tokens (`--logo-lit`, `--logo-shadow`), so no part of the face is darker than a
+  mid blue. A small seeded variation per piece makes it look like hand-laid
+  mosaic tiles.
+- **Open eyes:** eye outlines are drawn 1.8 times taller than on the standard
+  face, with a small white highlight in each (full size only; too small to see
+  in the header).
+- **A slight smile:** points near the mouth move up, the most at the corners
+  (0.4 cm) and none in the middle. The lips are a medium blue, with a thin dark
+  smile line where they meet.
+  - My first try filled the whole lip outline dark. That made a heavy blob that
+    read as a closed "O", not a smile, so I replaced it with the smile line.
+- **Kept subtle on purpose:** the owner said earlier they didn't want a smiley
+  face. This is a realistic face with a slight smile, not an emoji. A test checks
+  that the corners turn up, but by less than 1 cm.
+- The mesh tests still pass: no angle under 10°, and no overlapping points.
+
+**Calm blue: who gets which color** (written at the top of `src/styles.css`):
+- **Calm blue** (`--calm`, `--calm-soft`, `--calm-text`) for moments that can be
+  frustrating but are nobody's fault:
+  - camera setup hints, which now start with "→" (a next step) instead of "!"
+  - the calibration card while resting and getting ready, and its "can't see
+    your face" note
+  - the Talk message box
+  - the "No face" and "Paused" status badge
+  - the face-lost status and the paused banner
+  - the results note, and movements that didn't work
+  - onboarding errors and the "may be erased" note
+  - the camera placeholder while the model loads
+  - the face map's "No face" note
+- **Red** only for actions that delete things: delete profile, delete all data,
+  and calibration "Stop", which throws away the run in progress.
+- **Yellow** only for the scanning highlight. It has to be the most visible
+  thing on the screen, so I didn't change it to blue.
+- **Green** for "go" and "it worked".
+
+**Wording changed too.** The evidence that a color by itself calms people is
+weak and mixed, so I didn't rely on blue alone. The stronger reasons are:
+red signals failure or danger, and these moments aren't failures; and people
+cope better when told what to do next, without blame. So:
+- Face lost in Talk: "Paused: we can't see your face. Take your time. Scanning
+  continues when your face is back in view." This is true: tested with a
+  recording where the face disappears, and scanning stays frozen until it's
+  back.
+- Calibration, face lost: "…or press Pause if you need a break." Calibration
+  does *not* wait while the face is gone, so I didn't claim it does.
+- Results, when some movements didn't work: "Not every movement works for every
+  person. That's expected: Tessera only needs 1 to 3 that work for you."
+  Movements that didn't work get a neutral gray stripe, not red.
+
+**Still accessible:** states never depend on color alone (the badge has a
+different shape and text per state; setup hints have ✓ or →). New contrast
+checks cover every calm-blue text and border pair, and the logo's eyes and
+smile against the face (all pass in both themes). The contrast script now also
+fails if the two copies of the dark theme drift apart.
+
+**Not verified:** whether this actually feels calmer to anyone. Nobody has used
+it yet. A good question for the volunteer sessions: "Was there a moment you felt
+frustrated? What did the screen look like then?"
+

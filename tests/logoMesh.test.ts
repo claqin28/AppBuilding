@@ -52,6 +52,29 @@ describe("logo mesh", () => {
         for (const t of mesh.tris) expect(smallestAngle(t.map((k) => mesh.points2[k]))).toBeGreaterThanOrEqual(10);
       });
 
+      it("looks friendly: the eyes are open and the mouth corners turn up slightly", () => {
+        for (const e of mesh.eyes) expect(e.h / e.w).toBeGreaterThan(0.25);
+        const lips = mesh.points2.filter((_, k) => mesh.mouth.some((m, i) => m && mesh.tris[i].includes(k)));
+        // The corners are the leftmost and rightmost lip points (always kept when thinning).
+        const left = lips.reduce((a, b) => (b[0] < a[0] ? b : a));
+        const right = lips.reduce((a, b) => (b[0] > a[0] ? b : a));
+        const middleY = lips.filter((q) => Math.abs(q[0]) < 0.8).reduce((s, q) => s + q[1], 0) / lips.filter((q) => Math.abs(q[0]) < 0.8).length;
+        // Screen y points down: smaller y = higher.
+        expect(left[1]).toBeLessThan(middleY - 0.1);
+        expect(right[1]).toBeLessThan(middleY - 0.1);
+        // ...but only slightly: not a cartoon smile.
+        expect(middleY - left[1]).toBeLessThan(1);
+      });
+
+      it("draws a smile line that curves up at the corners", () => {
+        const xs = mesh.smile.map((q) => q[0]);
+        const left = mesh.smile[xs.indexOf(Math.min(...xs))];
+        const right = mesh.smile[xs.indexOf(Math.max(...xs))];
+        const lowest = Math.max(...mesh.smile.map((q) => q[1]));
+        expect(left[1]).toBeLessThan(lowest - 0.2);
+        expect(right[1]).toBeLessThan(lowest - 0.2);
+      });
+
       it("fills both eyes and the mouth", () => {
         const eyeX = mesh.tris.filter((_, i) => mesh.eye[i]).map((t) => mesh.points2[t[0]][0]);
         expect(eyeX.some((x) => x > 0)).toBe(true); // person's left eye

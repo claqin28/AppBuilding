@@ -245,9 +245,9 @@ export class TalkScreen implements Screen {
     this.els.status.textContent = this.paused
       ? "Paused"
       : this.trackingPaused
-        ? "Paused: can't see your face. Scanning continues when your face is back in view."
+        ? "Paused: we can't see your face. Take your time. Scanning continues when your face is back in view."
         : `Tracking · ${this.scanner.mode === "auto" ? "Auto-scan" : "Step-scan"} · ${where}`;
-    this.els.status.classList.toggle("bad", this.trackingPaused && !this.paused);
+    this.els.status.classList.toggle("lost", this.trackingPaused && !this.paused);
   }
 
   private chooseKey(key: Key): void {
