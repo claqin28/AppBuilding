@@ -358,25 +358,29 @@ function enterApp(): void {
   show(ctx.profile ? "talk" : "setup");
 }
 
-/** On load: reopen the active profile if there is one; otherwise show the welcome screen. */
+/**
+ * On load: always open on the welcome (landing) page. If a profile was in use
+ * last time, the page offers "Continue as <nickname>" first, and already uses
+ * that profile's theme, so nothing changes color when they continue.
+ */
 async function boot(): Promise<void> {
   renderMenu();
+  let lastId: string | null = null;
   try {
     if (await ProfileDb.exists()) {
       const d = await getDb();
       const active = await d.getActiveId();
-      const s = active ? await ProfileStore.open(d, active) : null;
-      if (s) {
-        useStore(s);
-        enterApp();
-        return;
+      const rec = active ? await d.getProfile(active) : null;
+      if (rec) {
+        lastId = rec.id;
+        applyTheme(rec.settings.theme);
       }
     }
   } catch {
-    /* storage unavailable: fall through to the welcome screen */
+    /* storage unavailable: the welcome page still offers guest mode */
   }
   document.body.classList.add("is-onboarding");
-  await onboarding.showWelcome();
+  await onboarding.showWelcome({ lastId });
 }
 
 void boot();

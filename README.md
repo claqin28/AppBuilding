@@ -31,7 +31,8 @@ thresholds for that person.
 0. **Welcome and onboarding:** a short description, then **create a profile on this
    device** (just a nickname, saved only in this browser, with no email, password, or
    online account) or **try as a guest** (nothing saved at all). Then a plain-language
-   privacy step and why the camera is needed. Returning profile users skip straight in.
+   privacy step and why the camera is needed. The app always opens on this welcome
+   page; if a profile was used last time, its main button is "Continue as <nickname>".
    The profile menu in the header can switch profiles, delete one, delete all data, or
    save a guest session to a profile.
 1. **Camera check:** live view of the 51 facial signals, a face-detected indicator,

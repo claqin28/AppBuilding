@@ -4,6 +4,9 @@
  *   "Try as a guest" → [profile: pick a nickname] → privacy in plain language →
  *   why the camera is needed → the app's camera check, then calibration.
  *
+ * The app always opens here, even for returning profiles: then the main
+ * button is "Continue as <nickname>" (the profile used last time).
+ *
  * A "profile" is NOT an online account: it's a nickname saved only in this
  * browser. Guests save nothing at all.
  *
@@ -34,14 +37,18 @@ type Mode = "guest" | "profile";
 export class Onboarding {
   private mode: Mode = "guest";
   private persistence: PersistenceResult = "unknown";
+  /** The profile used last time, offered first on the welcome page. */
+  private lastId: string | null = null;
 
   constructor(
     private root: HTMLElement,
     private actions: OnboardingActions,
   ) {}
 
-  async showWelcome(): Promise<void> {
+  async showWelcome(opts: { lastId?: string | null } = {}): Promise<void> {
+    if (opts.lastId !== undefined) this.lastId = opts.lastId;
     const profiles = await this.actions.listProfiles().catch(() => []);
+    const last = profiles.find((p) => p.id === this.lastId);
     const start = h(
       "section",
       { class: "ob-section", id: "ob-start", "aria-labelledby": "ob-start-title", tabindex: "-1" },
@@ -84,11 +91,19 @@ export class Onboarding {
       ),
       h("p", { class: "hint" }, "Setting this up for someone else? Every step works with a mouse, and no typing is needed."),
     );
-    const getStarted = h("button", { class: "pill-button" }, "Get started");
-    getStarted.addEventListener("click", () => {
+    const toStart = () => {
       start.scrollIntoView({ block: "start" });
       start.focus();
-    });
+    };
+    // Returning: continue in one click, or see every option. New: get started.
+    const heroActions = last
+      ? h(
+          "div",
+          { class: "hero-actions" },
+          h("button", { class: "pill-button", onclick: () => void this.actions.continueAs(last.id) }, `Continue as ${last.nickname}`),
+          h("button", { class: "pill-button secondary", onclick: toStart }, "Other options"),
+        )
+      : h("div", { class: "hero-actions" }, h("button", { class: "pill-button", onclick: toStart }, "Get started"));
     this.root.replaceChildren(
       h(
         "div",
@@ -105,7 +120,7 @@ export class Onboarding {
               { class: "lead" },
               "Tessera finds the face movements that work best for you, then turns them into an on-screen keyboard you control with your face. For people who can't rely on their hands or their voice.",
             ),
-            getStarted,
+            heroActions,
           ),
           h(
             "section",

@@ -716,3 +716,27 @@ fails if the two copies of the dark theme drift apart.
 it yet. A good question for the volunteer sessions: "Was there a moment you felt
 frustrated? What did the screen look like then?"
 
+## Always open on the welcome page (2026-10-23)
+
+The owner asked for the app to always start on the landing page. Before this,
+anyone with a saved profile skipped it and went straight into the app, so after
+creating a test profile the owner never saw the landing page again and thought
+it had been removed.
+
+**Now:** every load opens the welcome page.
+- If a profile was used last time, the hero's main button is "Continue as
+  <nickname>". Returning is still one click.
+- "Other options" scrolls to the full list: other profiles, a new profile, or
+  guest mode.
+- The page already uses that profile's saved theme, so nothing changes color when
+  they continue.
+- Nothing is opened or changed until a button is clicked.
+
+**The cost, stated plainly:** if the page reloads in the middle of use (a crash,
+or an accidental refresh), someone has to click "Continue as …" before face
+control works again. The person Tessera is for may not be able to click. A
+reload already needed a click to restart the camera, so it's one more click at
+the same moment, but it's still a cost. If volunteer testing shows it's a
+problem, the fix is a setting such as "open straight to Talk on this device"
+(off by default). It isn't built yet.
+

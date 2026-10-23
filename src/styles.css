@@ -291,7 +291,9 @@ body.is-onboarding .onboarding { display: block; }
 .hero-text { display: flex; flex-direction: column; justify-content: center; gap: 20px; }
 .display { font-size: clamp(2.6rem, 5.4vw, 4.6rem); font-weight: 800; letter-spacing: -0.032em; word-spacing: 0.04em; line-height: 1.02; margin: 0; }
 .hero-text .lead { font-size: 1.2rem; color: var(--muted); max-width: 34em; margin: 0; }
-.hero-text .pill-button { align-self: flex-start; min-height: 60px; padding: 12px 36px; font-size: 1.15rem; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.hero-actions .pill-button { min-height: 60px; padding: 12px 36px; font-size: 1.15rem; }
+.pill-button.secondary { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
 .hero-visual { position: relative; display: grid; place-items: center; min-height: 420px; }
 .hero-visual .face-logo { width: min(360px, 80%); height: auto; }
 .chip { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); white-space: nowrap;
