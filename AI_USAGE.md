@@ -126,5 +126,13 @@ record of which parts were generated and which parts I decided or wrote.
     `src/ui/resultsScreen.ts`
   - the new checks in `scripts/check-contrast.mjs` and `tests/logoMesh.test.ts`
 
+### Video script: code-explanation sections (2026-10-24)
+- The script, its structure, and the non-code sections are mine.
+- AI-drafted: the new "How it's built" section and the wording of the four code
+  sections (scoring, choosing the set, hysteresis, privacy), including which files
+  and lines to show. Also AI: the fact-check against the code, which removed claims
+  about drift (not built yet) and about the idle-test number proving hysteresis
+  (all three setups use the same detector, so that number can't show it).
+
 ## Third-party code and assets (neither AI nor me)
 - `@mediapipe/tasks-vision` library and `face_landmarker.task` model, © Google, Apache-2.0.
