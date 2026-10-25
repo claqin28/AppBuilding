@@ -740,3 +740,43 @@ the same moment, but it's still a cost. If volunteer testing shows it's a
 problem, the fix is a setting such as "open straight to Talk on this device"
 (off by default). It isn't built yet.
 
+## Floating mini-keyboard: feasibility test (2026-10-25)
+
+The owner asked whether Tessera could have something like Cluely's floating window.
+Cluely's window is hidden from screen sharing so other people can't tell it's there;
+that part isn't useful for Tessera and isn't copied. The useful part is a window that
+stays on top of other apps. Chrome can do that with Document Picture-in-Picture (free,
+on the device). The idea is in PLAN.md as step F, not scheduled.
+
+**The deciding question:** Tessera's camera loop runs on the page's animation frames
+(`src/vision/tracker.ts:105`), and Chrome slows or stops those when a tab is hidden.
+If that happens, a floating keyboard is useless.
+
+**How it was tested:** real windowed Chrome 141 (not headless) on a virtual screen in
+the dev container, with the fake camera playing a face video, on the Talk screen. I
+counted how often the camera loop ran per second. Playwright, the test tool, normally
+switches off Chrome's background slowdowns; I switched those defaults back on so the
+test sees Chrome's real behavior.
+
+| Situation | Camera loop runs per second |
+|---|---|
+| Tessera tab in front | about 6 (full speed on this slow machine) |
+| Another tab in front, no floating window | 1.6 |
+| Floating window open, Tessera tab in front | 6.6 |
+| Floating window open, another tab in front | 7 (full speed) |
+| Chrome minimized, or another app on top | **not tested**: the virtual screen has no window manager, so "minimize" did nothing |
+
+**What this shows:** with a floating window open, tracking kept running at full speed
+even with the Tessera tab hidden. Without one, it slowed to 1.6 per second. At that
+rate, frames are farther apart than the engine's 300 ms face-gap limit, so the
+detectors reset every frame and no gesture can fire. That's a separate problem in the
+current app, added to the hardening list: the badge still says "Tracking".
+
+**Limits of this test:**
+- The page kept reporting itself as "visible" even when hidden, which suggests the
+  test tool fakes that. Real Chrome may stop a hidden tab's loop completely rather
+  than slowing it.
+- Minimizing Chrome and putting another app on top, the realistic cases, weren't
+  tested.
+- So this is promising but not proof. Next check: a real Windows or macOS laptop.
+

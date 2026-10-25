@@ -73,6 +73,7 @@ Audited 2026-10-19 by re-running every check on the current code (see DECISIONS)
 | M8 | Word prediction | Planned |
 | M9 | Adaptive practice games | Planned. **First to cut** |
 | M10 | Polish + PWA install (PWA layer built last) | Planned |
+| F | Floating mini-keyboard (Chrome's Document Picture-in-Picture) | 💡 **Idea, not scheduled** (owner, 2026-10-25). Feasibility test done: promising, not yet proven on a real computer |
 
 **Order (owner's priority, 2026-10-19):** finish and verify M1–M4 and H first (R and
 V1 are part of finishing M1–M3 to the locked spec). Then **G → V2a → P → V2b**. Cut M9
@@ -148,6 +149,11 @@ M6–M7 → M8. **M9 is cut first.**
   lock onto a second person who leans in. Plan: track up to 2 faces, and pause control
   with a message whenever more than one face is visible.
 - Already done early: face lost → auto-scan pauses with a clear message (2026-10-16).
+- **Hidden tab (found 2026-10-25):** with another tab in front, the camera loop slowed
+  from about 6 to 1.6 frames per second. Frames that far apart are more than the
+  engine's 300 ms face-gap limit, so every detector resets each frame and no gesture
+  can ever fire, but the badge still says "Tracking". Fix: show "Paused" (and say why)
+  when the tab is hidden or the frame rate is too low for gestures to count.
 
 ## G: Onboarding, guest mode, one-time report (after M4 + H)
 
@@ -304,6 +310,27 @@ per-gesture mastery.
   install button. **Test that updates don't serve a stale cached version.**
 
 ---
+
+## F: Floating mini-keyboard (idea added 2026-10-25, not scheduled)
+
+A small window that stays on top of other apps (a video, a video call) with Tessera's
+keyboard, quick phrases, and Speak, so someone can keep talking without switching
+back to the Tessera tab. Built with Chrome's Document Picture-in-Picture: free, runs on
+the device, no server.
+
+- **What it can't do:** type into other apps. A web page can only control itself.
+  Controlling the whole computer would need a desktop app with system permissions,
+  which means leaving the free static website.
+- **Not copied from Cluely:** Cluely's window is hidden from screen sharing, so other
+  people can't tell it's there. Tessera's floating window stays visible. Hiding from
+  other people doesn't help the people Tessera is for.
+- **Feasibility test (2026-10-25), the deciding question: does face tracking keep
+  running while the Tessera tab is hidden?** Results are in DECISIONS.md. In short:
+  without a floating window, a hidden tab slowed tracking to an unusable rate; with
+  one open, tracking stayed at full speed. Not yet tested on a real computer, with
+  Chrome minimized, or with another app on top.
+- **Before building:** repeat the test on a real laptop (Windows or macOS), then M4 and
+  H come first.
 
 ## Proposed, not approved (won't be built unless you say so)
 
