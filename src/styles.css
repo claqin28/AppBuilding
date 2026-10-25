@@ -260,7 +260,6 @@ main:focus { outline: none; }
   to { opacity: 1; transform: none; }
 }
 .app-header h1 { margin: 0; font-size: 1.55rem; font-weight: 800; letter-spacing: -0.03em; }
-.tagline { margin: 0; color: var(--muted); font-size: 0.95rem; }
 .header-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 
 .tracking-badge {
@@ -295,6 +294,8 @@ body:not(.is-onboarding) #header-signup { display: none; }
   background: var(--surface); border: 1px solid var(--card-border); color: var(--text); font-size: 0.95rem;
 }
 .privacy-bar .icon { color: var(--brand); margin-top: 3px; }
+/* On the welcome page the bar's message is the "Private by design" lead card instead. */
+body.on-welcome .privacy-bar { display: none; }
 
 .app-nav {
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px;
@@ -399,7 +400,6 @@ body.is-onboarding .onboarding { display: block; }
 /* Cards: clean and rounded, a soft gradient, no heavy borders. */
 .card-grid { display: grid; gap: 20px; }
 .card-grid.three { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-.card-grid.two { grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
 .feature-card, .info-card {
   display: flex; flex-direction: column; gap: 12px; padding: clamp(24px, 3vw, 36px); border-radius: 30px;
   background: linear-gradient(180deg, var(--card-1), var(--card-2)); border: 1px solid var(--card-border); box-shadow: var(--shadow);
@@ -411,6 +411,16 @@ body.is-onboarding .onboarding { display: block; }
 .feature-card.blue p { color: var(--blue-card-muted); }
 .title-pill { display: inline-block; padding: 0 0.4em; border-radius: 999px; background: var(--pill-bg); color: var(--pill-text); }
 .feature-card.blue .title-pill { background: var(--blue-card-pill); color: var(--blue-card-text); }
+
+/* "Private by design" lead card: the privacy bar's message, as a big box. */
+.privacy-lead {
+  display: flex; align-items: center; gap: clamp(16px, 3vw, 28px); margin-bottom: 20px; padding: clamp(28px, 4vw, 44px); border-radius: 30px;
+  background: linear-gradient(160deg, var(--blue-card-1), var(--blue-card-2)); color: var(--blue-card-text); box-shadow: var(--shadow);
+}
+.privacy-lead h3 { margin: 0 0 6px; font-size: clamp(1.4rem, 2.6vw, 2rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.privacy-lead p { margin: 0; color: var(--blue-card-muted); font-size: 1.1rem; }
+.privacy-lead-icon { display: grid; place-items: center; flex: none; width: clamp(56px, 7vw, 76px); height: clamp(56px, 7vw, 76px); border-radius: 50%; background: var(--blue-card-pill); }
+.privacy-lead-icon .icon { width: 50%; height: 50%; }
 
 /* Small pictures of the real screens inside the cards (decorative). */
 .mini { margin: auto 0 0; padding: 12px; border-radius: 18px; background: var(--surface-2); list-style: none; }

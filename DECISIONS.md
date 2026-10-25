@@ -908,3 +908,24 @@ requests.
 **Not tested:** a real webcam and a real phone, and whether the animations feel
 calm or distracting to someone who's tired.
 
+## Welcome page: privacy message as a card, no header tagline (2026-10-25)
+
+The owner asked for two changes:
+1. Move the "Private by design" bar off the top of the welcome page and make it one
+   of the animated boxes.
+2. Remove the tagline under "Tessera" in the header.
+
+- **Privacy bar:** hidden on the welcome page only (`body.on-welcome`). Its message is
+  now the lead card of the "Private by design" section: a big blue card with the lock
+  icon. It replaces the old "Your video stays here" card, which said the same thing.
+  The bar still shows on the onboarding steps and every app screen.
+- **Why this still meets "say it plainly in the UI":** on the welcome page, the
+  camera can only be started by "Try it with your camera". The line right under that
+  button says the video stays in the browser tab and nothing is recorded or sent.
+  The onboarding privacy step says it again before the app's camera step.
+- **Header:** just the logo and "Tessera". The welcome hero already says what Tessera
+  does. This also makes the header shorter on phones.
+- **Tested:** both themes and phone width. Checked that the bar is hidden on the
+  welcome page and back on the privacy step and in the app, and that the card fades
+  up on scroll. All earlier checks still pass.
+

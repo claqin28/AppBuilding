@@ -191,13 +191,24 @@ export class Onboarding {
         "section",
         { class: "landing-section", "aria-labelledby": "ob-privacy-title" },
         sectionHead("ob-privacy-title", "Private by design", "Everything runs in this browser tab."),
+        // The privacy message from the top bar (hidden on this page) lives here as the lead card.
+        h(
+          "article",
+          { class: "privacy-lead reveal" },
+          h("span", { class: "privacy-lead-icon", "aria-hidden": "true" }, lockIcon()),
+          h(
+            "div",
+            {},
+            h("h3", {}, "Your camera video never leaves this browser tab."),
+            h("p", {}, "Tessera processes it only inside this tab. No video or images are recorded, stored, or sent anywhere."),
+          ),
+        ),
         h(
           "div",
-          { class: "card-grid two" },
-          infoCard(0, "Your video stays here", "Camera video is processed in this tab. It's never recorded, saved, or sent anywhere."),
-          infoCard(1, "No microphone", "Tessera never listens to your voice."),
-          infoCard(2, "No account, no server", "A profile is just a nickname saved in this browser. Guests save nothing at all."),
-          infoCard(3, "You choose what to share", "Nothing is sent automatically. Downloads happen only when you click them."),
+          { class: "card-grid three" },
+          infoCard(0, "No microphone", "Tessera never listens to your voice."),
+          infoCard(1, "No account, no server", "A profile is just a nickname saved in this browser. Guests save nothing at all."),
+          infoCard(2, "You choose what to share", "Nothing is sent automatically. Downloads happen only when you click them."),
         ),
       ),
       start,
@@ -209,6 +220,8 @@ export class Onboarding {
     );
 
     this.root.replaceChildren(page);
+    // The top privacy bar is hidden on this page; its message is the "Private by design" lead card.
+    document.body.classList.add("on-welcome");
     this.teardown.push(() => demo.dispose(), revealOnScroll(page));
     this.root.focus();
     window.scrollTo(0, 0);
@@ -220,6 +233,7 @@ export class Onboarding {
   }
 
   private stop(): void {
+    document.body.classList.remove("on-welcome");
     for (const fn of this.teardown.splice(0)) fn();
   }
 
@@ -382,6 +396,18 @@ function featureCard(i: number, variant: string, step: string, title: (string | 
     h("p", {}, text),
     visual,
   );
+}
+
+/** The same lock icon as the privacy bar in the header area. */
+function lockIcon(): SVGSVGElement {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("class", "icon");
+  const path = document.createElementNS(ns, "path");
+  path.setAttribute("d", "M7 10V7a5 5 0 0 1 10 0v3h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h1Zm2 0h6V7a3 3 0 0 0-6 0v3Z");
+  svg.append(path);
+  return svg;
 }
 
 function infoCard(i: number, title: string, text: string): HTMLElement {
