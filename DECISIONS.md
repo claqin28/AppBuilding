@@ -893,6 +893,13 @@ sets a display, such as pill buttons. So "Starting the camera…" stayed visible
 the demo button showed before the 3D view was ready. Fix: a global
 `[hidden] { display: none !important; }`.
 
+**Bug found after publishing, and fixed:** on a desktop-sized screen the 3D face
+sometimes never loaded. The browser can report "not visible" (from before the page
+was shown) and then "visible" in one batch, and the code read only the first report.
+Phone-sized screens got the two reports separately, so the phone test passed. Fix:
+use the newest report. Re-tested scrolling at once, scrolling after 2 seconds, and
+not scrolling: the 3D face loads in all three.
+
 **Tested:** both themes and phone width (390 px, no sideways scrolling), plus reduced
 motion. The camera demo was tested with the fake camera. Onboarding, profiles, Talk,
 Face map, face-lost, and calm-blue checks all pass, with no errors and no outside

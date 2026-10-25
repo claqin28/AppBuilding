@@ -80,8 +80,10 @@ export class LandingFace {
     // Load the 3D view when it's about to scroll into view; sway only while it's on screen.
     if ("IntersectionObserver" in window) {
       this.observer = new IntersectionObserver(
-        ([e]) => {
-          this.onScreen = e.isIntersecting;
+        (entries) => {
+          // Several updates can arrive at once (e.g. "not visible" from before the page was
+          // shown, then "visible"): only the newest one counts.
+          this.onScreen = entries[entries.length - 1].isIntersecting;
           if (this.onScreen) void this.start();
           this.updateSway();
         },
