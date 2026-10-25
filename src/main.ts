@@ -19,6 +19,7 @@ import { TalkScreen } from "./ui/talkScreen";
 import { faceLogo, replayLogo } from "./ui/faceLogo";
 import { Onboarding } from "./ui/onboarding";
 import { renderProfileMenu } from "./ui/profileMenu";
+import { warmUpVoices } from "./ui/speech";
 import { clearLegacy, readLegacy } from "./storage/legacy";
 import { ProfileDb, requestPersistence } from "./storage/profileDb";
 import { DEFAULT_SETTINGS } from "./storage/settings";
@@ -386,4 +387,5 @@ async function boot(): Promise<void> {
   await onboarding.showWelcome({ lastId });
 }
 
+warmUpVoices(); // Chrome loads voices in the background; start now so they're ready for the first Speak
 void boot();

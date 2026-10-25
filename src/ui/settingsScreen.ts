@@ -4,7 +4,7 @@ import { parseTrace, traceFrames } from "../signal/trace";
 import type { AppContext, Screen } from "./app";
 import { h, pickTextFile } from "./dom";
 import { floatingWindowSupported, openFloatingTest } from "./floatingTest";
-import { onDeviceVoices, speak, speakErrorMessage, voicesReady } from "./speech";
+import { onDeviceVoices, speak, speakErrorMessage, speechSupported, voicesReady, type SpeakResult } from "./speech";
 import { LIMITS, type Settings } from "../storage/settings";
 
 export class SettingsScreen implements Screen {
@@ -33,14 +33,23 @@ export class SettingsScreen implements Screen {
 
     const voiceSel = h("select", { "aria-label": "Voice" });
     const voiceNote = h("p", { class: "hint" });
-    void voicesReady().then(() => {
+    // Chrome can list its voices late, so fill the list now and again whenever it changes.
+    const fillVoices = () => {
+      const all = speechSupported() ? speechSynthesis.getVoices() : [];
       const voices = onDeviceVoices();
-      voiceSel.append(h("option", { value: "" }, "Default on-device voice"));
-      for (const v of voices) voiceSel.append(h("option", { value: v.voiceURI, selected: v.voiceURI === s.voiceURI }, `${v.name} (${v.lang})`));
+      voiceSel.replaceChildren(h("option", { value: "" }, "Default on-device voice"));
+      for (const v of voices) voiceSel.append(h("option", { value: v.voiceURI, selected: v.voiceURI === this.ctx.settings.voiceURI }, `${v.name} (${v.lang})`));
       voiceNote.textContent = voices.length
-        ? `${voices.length} on-device voices available. Online voices are hidden so your messages stay private.`
-        : "No on-device voice found in this browser, so speech is off.";
-    });
+        ? `${voices.length} on-device ${voices.length === 1 ? "voice" : "voices"} available. Online voices are hidden so your messages stay private.`
+        : all.length
+          ? `Only online voices are available here (${all.length}). They would send your messages to a server, so speech is off.`
+          : "Your browser hasn't listed any voices yet. If this doesn't change in a few seconds, reload the page.";
+    };
+    void voicesReady().then(fillVoices);
+    if (speechSupported()) {
+      speechSynthesis.addEventListener("voiceschanged", fillVoices);
+      this.stopVoices = () => speechSynthesis.removeEventListener("voiceschanged", fillVoices);
+    }
     voiceSel.addEventListener("change", () => update({ voiceURI: voiceSel.value }));
 
     const clearAfter = h("input", { type: "checkbox", checked: s.clearAfterSpeak });
@@ -73,8 +82,11 @@ export class SettingsScreen implements Screen {
           {
             class: "mid-button",
             onclick: () => {
-              const err = speakErrorMessage(speak("Hello. This is my voice.", this.ctx.settings.speechRate, this.ctx.settings.voiceURI));
-              if (err) this.ctx.notify(err, true);
+              const report = (r: SpeakResult) => {
+                const err = speakErrorMessage(r);
+                if (err) this.ctx.notify(err, true);
+              };
+              void speak("Hello. This is my voice.", this.ctx.settings.speechRate, this.ctx.settings.voiceURI, report).then(report);
             },
           },
           "Test voice",
@@ -121,7 +133,12 @@ export class SettingsScreen implements Screen {
     );
   }
 
-  unmount(): void {}
+  private stopVoices: (() => void) | null = null;
+
+  unmount(): void {
+    this.stopVoices?.();
+    this.stopVoices = null;
+  }
 
   private async readTrace() {
     const text = await pickTextFile();

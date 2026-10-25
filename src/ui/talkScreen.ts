@@ -18,7 +18,7 @@ import type { Action } from "../signal/selection";
 import type { AppContext, Screen } from "./app";
 import { h } from "./dom";
 import { Meters } from "./meters";
-import { speak, speakErrorMessage } from "./speech";
+import { speak, speakErrorMessage, type SpeakResult } from "./speech";
 import { LIMITS } from "../storage/settings";
 
 const TICK_MS = 50;
@@ -254,8 +254,11 @@ export class TalkScreen implements Screen {
     const effect = applyKey(this.text, key);
     this.setMessage(effect.text);
     if (effect.speak) {
-      const err = speakErrorMessage(speak(effect.speak, this.ctx.settings.speechRate, this.ctx.settings.voiceURI));
-      if (err) this.ctx.notify(err, true);
+      const report = (r: SpeakResult) => {
+        const err = speakErrorMessage(r);
+        if (err) this.ctx.notify(err, true);
+      };
+      void speak(effect.speak, this.ctx.settings.speechRate, this.ctx.settings.voiceURI, report).then(report);
       if (key.kind === "speak" && this.ctx.settings.clearAfterSpeak) this.setMessage("");
     }
     if (effect.layout) {

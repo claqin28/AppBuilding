@@ -1005,3 +1005,42 @@ missed", whatever the sensitivity. That was a bug in my test harness, not the ap
 it fed overlapping stretches of the recording into one detector, so time ran
 backwards. Re-measured with a fresh detector per try.
 
+## Speech: "no on-device voice" on a Mac was a timing bug (2026-10-25)
+
+**What happened:** testing on Chrome on a Mac, the owner pressed Speak and got "This
+browser has no on-device voice… Try Chrome on Windows or macOS". Macs do have
+on-device voices, and the message told a Mac user to use a Mac.
+
+**Cause:** Chrome loads its voice list in the background, and right after the page
+opens the list is empty for a moment. The Settings screen waited for it, but Talk's
+Speak checked instantly, saw an empty list, and treated "not loaded yet" as "this
+computer has no voices". It only went unnoticed because headless test Chrome has no
+voices at all, so speech had never been tested for real (PLAN.md has said so since
+M3).
+
+**Fix** (`src/ui/speech.ts`):
+- The app asks Chrome for its voices as soon as it starts (`warmUpVoices`).
+- If the list is still empty when someone speaks, Speak waits up to 2 seconds for it.
+- Choosing a voice is now a small tested function (`chooseVoice`). It still only ever
+  uses on-device voices, and online "Google" voices are never used.
+- **Separate, honest messages** for:
+  - no voices yet ("wait a few seconds and try again")
+  - only online voices ("would send your message to a server, so Tessera won't use
+    them")
+  - Chrome refusing to speak because the page hasn't been clicked ("click anywhere
+    once")
+
+  Before, all three looked like "no voice".
+- The Settings voice list refreshes when Chrome's voices arrive late, and its note uses
+  the same three cases.
+
+**Tested:**
+- Unit tests for voice choice and messages.
+- A browser test that fakes Chrome's behavior: voices arrive 0.8 s late, the voice
+  list mixes a Google online voice and a Mac on-device voice, there's an only-online
+  case, and there's a "blocked" case. Speak waited and used the on-device voice, never
+  the online one.
+
+**Still not verified:** that sound actually plays on a real Mac. Only the owner's
+laptop can confirm that.
+
