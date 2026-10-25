@@ -10,11 +10,17 @@ export interface Settings {
   holdMs: number;
   refractoryMs: number;
   /**
-   * Sensitivity: how far from the resting face toward the person's typical full
-   * movement a gesture must go to count (0.4 = 40% of the way). Calibration
-   * measures at 0.5; lower = more sensitive. See withReach in src/signal/profile.ts.
+   * Sensitivity ("Movement needed"): how far from the resting face toward the
+   * person's typical full movement a gesture must go to count (0.25 = a quarter
+   * of the way). Calibration measures at 0.5; lower = more sensitive. See
+   * withReach in src/signal/profile.ts.
+   *
+   * History: this was "reach" with a default of 0.4. It was renamed when the
+   * default became 0.25 (owner: "much more sensitive"), so saved profiles that
+   * stored the old 0.4 get the new default once instead of keeping 0.4. The old
+   * key is dropped by normalizeSettings like any unknown key.
    */
-  reach: number;
+  movementNeeded: number;
   speechRate: number;
   voiceURI: string;
   clearAfterSpeak: boolean;
@@ -29,7 +35,7 @@ export const DEFAULT_SETTINGS: Settings = {
   scanMs: 1200,
   holdMs: 250,
   refractoryMs: 400,
-  reach: 0.4,
+  movementNeeded: 0.25,
   speechRate: 0.9,
   voiceURI: "",
   clearAfterSpeak: false,
@@ -42,7 +48,7 @@ export const LIMITS = {
   scanMs: { min: 500, max: 4000 },
   holdMs: { min: 100, max: 1500 },
   refractoryMs: { min: 100, max: 2000 },
-  reach: { min: 0.3, max: 0.6 },
+  movementNeeded: { min: 0.2, max: 0.6 },
   speechRate: { min: 0.5, max: 1.5 },
 };
 

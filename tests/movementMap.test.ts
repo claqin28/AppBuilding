@@ -149,13 +149,13 @@ describe("regionText", () => {
 });
 
 describe("regionNodes (the dots on the 3D head)", () => {
-  it("nothing calibrated yet: every testable region gets a red 'not tested yet' dot; the cheeks get none", () => {
+  it("nothing calibrated yet: every testable region gets a red 'not tested yet' dot; cheeks and jaw get none", () => {
     const nodes = regionNodes(null);
     expect(nodes).toHaveLength(8);
     for (const n of nodes) {
       expect(n.color).toBeNull();
-      if (n.region === "leftCheek" || n.region === "rightCheek") {
-        // Puff cheeks was retired, so nothing can test the cheeks any more.
+      if (n.region === "leftCheek" || n.region === "rightCheek" || n.region === "jaw") {
+        // Puff cheeks and the jaw movements were retired, so nothing can test these any more.
         expect(n.state).toBe("unavailable");
         expect(n.label).toMatch(/no test for this area$/);
       } else {
@@ -184,11 +184,11 @@ describe("regionNodes (the dots on the 3D head)", () => {
 });
 
 describe("retired gestures and the face regions", () => {
-  it("the cheeks can't be tested any more; the jaw still can (Jaw to your right)", () => {
+  it("the cheeks and jaw can't be tested any more; brows, eyes, and lips can", () => {
     expect(TESTABLE_REGIONS.has("leftCheek")).toBe(false);
     expect(TESTABLE_REGIONS.has("rightCheek")).toBe(false);
-    expect(TESTABLE_REGIONS.has("jaw")).toBe(true);
-    expect(TESTABLE_REGIONS.has("lips")).toBe(true);
+    expect(TESTABLE_REGIONS.has("jaw")).toBe(false);
+    for (const r of ["leftBrow", "rightBrow", "leftEye", "rightEye", "lips"] as const) expect(TESTABLE_REGIONS.has(r)).toBe(true);
   });
 
   it("untestable regions are colored like the rest of the face, not 'not tested'", () => {

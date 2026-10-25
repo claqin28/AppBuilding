@@ -28,9 +28,16 @@ export interface EngineParams {
   holdMs: number;
   refractoryMs: number;
   maxFaceGapMs: number;
+  /**
+   * A gesture also counts as relaxed after staying below its `on` line this
+   * long (see GestureDetector). Without it, a resting face that settles a little
+   * higher than at calibration never resets, and because only one gesture can
+   * count at a time, that stuck gesture would block all the others too.
+   */
+  releaseMs: number;
 }
 
-export const DEFAULT_ENGINE: EngineParams = { tauMs: 80, holdMs: 250, refractoryMs: 400, maxFaceGapMs: 300 };
+export const DEFAULT_ENGINE: EngineParams = { tauMs: 80, holdMs: 250, refractoryMs: 400, maxFaceGapMs: 300, releaseMs: 600 };
 
 export interface ChannelState {
   action: Action;
@@ -78,6 +85,7 @@ export class ControlEngine {
         off: b.off,
         holdMs: this.params.holdMs,
         refractoryMs: this.params.refractoryMs,
+        releaseMs: this.params.releaseMs,
       }),
       value: 0,
     }));

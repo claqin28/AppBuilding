@@ -135,8 +135,10 @@ M6–M7 → M8. **M9 is cut first.**
 
   Condition order is varied between sessions so practice doesn't favor one condition.
 - (d) Calibration time is logged (already recorded). **Log each session's
-  sensitivity setting ("Movement needed")** too: it changes the Tessera condition's
-  thresholds, so results at different settings can't be pooled without saying so.
+  sensitivity setting ("Movement needed", default 25% since 2026-10-25)** too: it
+  changes the Tessera condition's thresholds, so results at different settings can't
+  be pooled without saying so. The release rule (0.6 s) applies to all three
+  conditions, because it's part of the shared engine.
 - (e) Session-over-session metrics are logged locally for the day-two check.
 - Export JSON/CSV by download only.
 - A **scan-step simulator** gives repeatable best-case numbers without a camera.

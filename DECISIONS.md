@@ -1073,3 +1073,62 @@ from people they tried it with. No numbers were recorded.
      look worse for a known reason. Recorded in PLAN.md as a decision to make before
      M4.
 
+## Talk: much more sensitive, a release rule, and both jaw movements retired (2026-10-25)
+
+The owner asked to retire Jaw to your right as well (the mirror of Jaw to your left),
+and to make Talk "much more sensitive so it picks up easily when you try to select
+things".
+
+**Jaw to your right retired.** Nothing offered tests the jaw now, so like the cheeks
+it gets no dot and "no test for this area". Calibration offers 8 movements (5 ticked
+by default, about 2.5 min).
+
+**Measured before choosing numbers** (synthetic test people; the scripts were
+throwaway, the key results are now tests in `tests/sensitivity.test.ts`):
+
+| Setting | Tries at 50% size | 40% size | 30% size | 0.35 s flick |
+|---|---|---|---|---|
+| Movement needed 40% (old) | 97% | 13% | 0% | 0% |
+| Movement needed 25% (new) | 100% | 100% | 70% | 100% |
+| Movement needed 20% (slider minimum) | 100% | 100% | 97% | not measured |
+
+- **Hold time barely mattered** for held movements (250, 200, and 150 ms gave the same
+  results). It only helped flicks shorter than about 0.3 s, and it's the main guard
+  against twitches. So it stays at 0.25 s; the owner can lower it in Settings.
+- **No accidental clicks** while resting or talking, at any of these settings, even
+  with uneven blinks (one eye closing 25% less). As before, the synthetic people are
+  steadier than real faces, so this doesn't prove real-world safety. That's the M4
+  idle test's job.
+
+**The bigger finding: a stuck reset.** With the resting face sitting 20% of the way
+up between tries (as can happen with different lighting, posture, or tiredness than
+at calibration), **0 of 108** repeated selections counted, at the old *and* the new
+sensitivity. After a gesture, the face had to drop below `off`, and it never did.
+Lowering the sensitivity also lowers `off`, so "more sensitive" alone would have made
+this more common. Worse, the engine's one-at-a-time rule meant that one gesture stuck
+like this blocked all the others. This is a likely cause of "doesn't pick up when I
+try to select".
+
+**Release rule** (`GestureDetector`, `releaseMs` = 600 in `DEFAULT_ENGINE`):
+- A gesture also counts as relaxed after staying below `on` for 0.6 s in a row.
+- Result: the same scenario went from 0/6 to 6/6 selections counting.
+- Unchanged: wobble still fires once, popping back above `on` restarts the wait, and
+  a gesture still held when the face reappears still doesn't fire (all tested).
+- Calibration's own measurements don't use it, so its results don't change.
+
+**Settings:**
+- "Movement needed" now defaults to **25%**, with a range of 20–60%.
+- It's stored under a new name (`movementNeeded` instead of `reach`), so profiles that
+  saved the old 40% default get the new one once. Only one day of custom values is
+  lost.
+- The meter hint now appears when an expression is still held 1.5 s after counting
+  ("Relax your face to reset"). The old "stuck below on" case can't last more than
+  0.6 s any more.
+
+**Not verified:** how often this misfires on real faces. Real faces are less steady
+than the synthetic ones, so some accidental clicks are possible at 25%. If the owner
+sees them, the slider goes back up.
+
+**For the owner's video script:** the hysteresis section should now say "…then
+relax: drop below the off line, or stay below the on line for 0.6 seconds".
+

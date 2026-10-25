@@ -12,11 +12,11 @@ import { h } from "./dom";
 const FULL_SCALE = 1.5;
 const FLASH_MS = 700;
 /**
- * After a gesture counts, the face must relax below the lower "off" line before
- * the next one can. If it stays in between for this long, the row says so.
- * (Shorter than this would show the hint briefly after every gesture.)
+ * After a gesture counts, the face must relax before the next one can (see
+ * GestureDetector). If the expression is still held this long after counting,
+ * the row says so. (Shorter would show the hint after every normal gesture.)
  */
-const STUCK_MS = 600;
+const STUCK_MS = 1500;
 
 export class Meters {
   readonly el = h("div", { class: "meters" });
@@ -56,8 +56,8 @@ export class Meters {
       r.row.classList.toggle("active", c.phase === "holding" || c.phase === "pending");
       // A steady highlight (not a flash) for a moment after firing.
       r.row.classList.toggle("fired", now - (this.lastFired.get(c.action) ?? -Infinity) < FLASH_MS);
-      // Below the "on" line but not yet relaxed enough to count again.
-      const waiting = c.phase === "holding" && c.value < c.on;
+      // Already counted, and the expression is still being held.
+      const waiting = c.phase === "holding" && c.value >= c.on;
       if (!waiting) this.waitingSince.delete(c.action);
       else if (!this.waitingSince.has(c.action)) this.waitingSince.set(c.action, now);
       const stuck = waiting && now - this.waitingSince.get(c.action)! >= STUCK_MS;

@@ -13,14 +13,20 @@
  *    fire. Brief twitches are shorter than that.
  *
  * 3. ONE FIRE PER GESTURE. After firing, nothing more happens until the
- *    person relaxes (signal below `off`). Holding a smile doesn't repeat.
+ *    person relaxes. Holding a smile doesn't repeat. "Relaxed" means the
+ *    signal dropped below `off`, OR (with `releaseMs`) it has stayed below
+ *    `on` for `releaseMs` in a row. The second way matters because a resting
+ *    face can settle a little higher than at calibration (lighting, posture,
+ *    tiredness): if it never gets below `off`, the gesture could never count
+ *    again. Brief dips below `on` (wobble) are far shorter than `releaseMs`.
  *
  * 4. REFRACTORY PERIOD. After relaxing, we wait `refractoryMs` before
  *    listening again, so a bouncy release can't count as a second gesture.
  *
  * States:  ready --(above on)--> pending --(held long enough)--> FIRE, holding
  *          pending --(dropped below on before hold time)--> ready
- *          holding --(below off)--> cooldown --(refractory time passed)--> ready
+ *          holding --(below off, or below on for releaseMs)--> cooldown
+ *          cooldown --(refractory time passed)--> ready
  *
  * The detector STARTS in "holding": if the person is already mid-gesture
  * when control begins (or the face reappears), they must relax first.
@@ -35,6 +41,12 @@ export interface DetectorParams {
   holdMs: number;
   /** How long (ms) after release before a new gesture can start. */
   refractoryMs: number;
+  /**
+   * Also count as relaxed after staying below `on` this long (ms) without
+   * reaching `off`. Leave out (or Infinity) to require `off`, as calibration's
+   * own measurements do.
+   */
+  releaseMs?: number;
 }
 
 export type DetectorPhase = "ready" | "pending" | "holding" | "cooldown";
@@ -45,6 +57,8 @@ export class GestureDetector {
   private pendingSince = 0;
   /** When the person relaxed (valid in "cooldown"). */
   private releasedAt = 0;
+  /** While holding: when the signal went below `on` (null = it's above). */
+  private belowOnSince: number | null = null;
 
   constructor(public params: DetectorParams) {
     if (params.off > params.on) throw new Error("off threshold must not be above on threshold");
@@ -69,9 +83,15 @@ export class GestureDetector {
         }
         return this.checkHold(t, holdMs);
       case "holding":
-        if (value < off) {
-          this.phase = "cooldown";
-          this.releasedAt = t;
+        if (value >= on) {
+          this.belowOnSince = null;
+        } else {
+          this.belowOnSince ??= t;
+          if (value < off || t - this.belowOnSince >= (this.params.releaseMs ?? Infinity)) {
+            this.phase = "cooldown";
+            this.releasedAt = t;
+            this.belowOnSince = null;
+          }
         }
         return false;
       case "cooldown":
@@ -82,6 +102,7 @@ export class GestureDetector {
   /** Makes the person relax before the next gesture can fire (used when the face is lost). */
   reset(): void {
     this.phase = "holding";
+    this.belowOnSince = null;
   }
 
   /** Puts the detector straight into "ready" (used by tests and analysis that start from rest). */

@@ -16,7 +16,7 @@ export class SettingsScreen implements Screen {
 
     const slider = (
       label: string,
-      key: "holdMs" | "refractoryMs" | "scanMs" | "speechRate" | "reach",
+      key: "holdMs" | "refractoryMs" | "scanMs" | "speechRate" | "movementNeeded",
       step: number,
       fmt: (v: number) => string,
       help: string,
@@ -60,10 +60,10 @@ export class SettingsScreen implements Screen {
       h("h3", {}, "Sensitivity"),
       slider(
         "Movement needed",
-        "reach",
+        "movementNeeded",
         0.05,
         (v) => `${Math.round(v * 100)}%`,
-        "How far from your resting face toward your usual full movement you need to go for a gesture to count. Lower = more sensitive: smaller movements count, but accidental clicks become more likely. Calibration measures at 50%; the default is 40%.",
+        "How far from your resting face toward your usual full movement you need to go for a gesture to count. Lower = more sensitive: smaller movements count, but accidental clicks become more likely. Calibration measures at 50%; the default is 25%.",
       ),
       h("h3", {}, "Timing"),
       slider("Hold time", "holdMs", 50, ms, "How long a gesture must be held before it counts. Longer = fewer accidents, but slower."),

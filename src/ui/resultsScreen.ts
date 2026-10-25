@@ -74,7 +74,7 @@ export class ResultsScreen implements Screen {
       }
       warnings.append(...mappingWarnings(result, map).map((w) => h("li", {}, w)));
       if (profile) {
-        engine = new ControlEngine(withReach(profile.bindings, this.ctx.settings.reach), {
+        engine = new ControlEngine(withReach(profile.bindings, this.ctx.settings.movementNeeded), {
           ...DEFAULT_ENGINE,
           tauMs: profile.tauMs,
           holdMs: this.ctx.settings.holdMs,

@@ -98,12 +98,15 @@ both be used.
 **Sensitivity (added 2026-10-25), `src/signal/profile.ts: withReach`:** calibration
 *measures* everything with `on` halfway (reach 0.5). Talk then works the lines out
 again from the same `restLevel` and `typicalPeak`, at the person's sensitivity setting
-(Settings → "Movement needed", default **0.4**, range 0.3–0.6):
+(Settings → "Movement needed", default **0.25**, range 0.2–0.6; it was 0.4 until the
+owner asked for "much more sensitive"):
 `on` = rest + reach × (peak − rest), and `off` = halfway from rest to `on`. Example at
-the default: `on` = 0.05 + 0.4 × 0.80 = **0.37**, `off` = **0.21**. Why: movements made
-while typing are often smaller than calibration's deliberate ones. On synthetic test
-people, tries half the size of calibration's were caught 23% of the time at reach 0.5
-and 97% at 0.4 (`tests/sensitivity.test.ts`).
+the default: `on` = 0.05 + 0.25 × 0.80 = **0.25**, `off` = **0.15**. Why: movements
+made while typing are often smaller than calibration's deliberate ones. On synthetic
+test people (`tests/sensitivity.test.ts`):
+- tries half the size of calibration's: caught 23% at reach 0.5, 97% at 0.4
+- tries 40% of the size: caught 13% at 0.4, 100% at 0.25
+- quick third-of-a-second movements count at 0.25 but not at 0.4
 
 **Questions:** Why does the rest phase include talking? Why leave-one-out instead of
 testing tries against the threshold they set? What does an AUC of 0.5 mean? Why put
@@ -154,27 +157,37 @@ fix that:
 2. **Minimum hold.** The signal must stay above `on` for 250 ms before it fires.
    Brief twitches are too short. (Blinks are handled differently: the wink
    formula subtracts one eye from the other, so a two-eye blink stays near 0.)
-3. **One click per gesture.** After firing, nothing happens until you relax below
-   `off`. Holding a smile doesn't repeat.
+3. **One click per gesture.** After firing, nothing happens until you relax. Holding
+   a smile doesn't repeat. "Relaxed" means below `off`, **or below `on` for 0.6 s in
+   a row** (the *release rule*, added 2026-10-25). Why the second way: if your resting
+   face sits a little higher than at calibration (different light, posture,
+   tiredness), it may never get below `off`, and then the gesture could never count
+   again. In a synthetic test, a resting face 20% of the way up blocked all 6 of 6
+   selections without the rule, and none with it. Wobble dips below `on` are much
+   shorter than 0.6 s, so they still don't count as relaxing.
 4. **Refractory period.** After relaxing, the detector ignores input for 400 ms, so a
    bouncy release can't count as a second click.
 
 States: **ready** → (above `on`) → **pending** → (held 250 ms) → **FIRE**, then
-**holding** → (below `off`) → **cooldown** → (400 ms) → **ready**.
+**holding** → (below `off`, or below `on` for 0.6 s) → **cooldown** → (400 ms) →
+**ready**.
 If the signal drops below `on` while pending, it returns to ready.
 
 **Safe start:** the detector starts in *holding*. If someone is already mid-gesture
 when control starts, or when their face comes back into view, they must relax first.
 
 **The engine adds two rules across gestures:**
-- **One at a time:** while any gesture is held, no other can fire.
+- **One at a time:** while any gesture is held, no other can fire. (This is why the
+  release rule matters so much: before it, one gesture stuck "holding" because of a
+  slightly raised resting face blocked every other gesture too.)
 - **Shared cooldown:** after any action fires, no action can fire for 400 ms. If two
   fire on the same frame, the one further past its own `on` line wins.
 - No face means nothing fires. If the face was gone for more than 300 ms, everything
   resets.
 
 **Questions:** What problem does hysteresis solve that a hold time doesn't (and vice
-versa)? Why start in "holding" instead of "ready"? Why the one-at-a-time rule?
+versa)? Why start in "holding" instead of "ready"? Why the one-at-a-time rule? Why
+does the release rule need "0.6 s *in a row*" rather than "any 0.6 s"?
 
 ---
 

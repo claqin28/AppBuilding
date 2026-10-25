@@ -74,7 +74,7 @@ export class TalkScreen implements Screen {
     const hasNext = profile.bindings.some((b) => b.action === "NEXT");
     const mode: ScanMode = s.scanMode === "step" && hasNext ? "step" : "auto";
 
-    this.engine = new ControlEngine(withReach(profile.bindings, s.reach), {
+    this.engine = new ControlEngine(withReach(profile.bindings, s.movementNeeded), {
       ...DEFAULT_ENGINE,
       tauMs: profile.tauMs,
       holdMs: s.holdMs,

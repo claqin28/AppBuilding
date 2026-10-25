@@ -3,12 +3,10 @@ import { GESTURES, isGestureId, OFFERED_GESTURES } from "../src/signal/gestures"
 import { parseProfile } from "../src/signal/profile";
 
 describe("which gestures calibration offers", () => {
-  it("Open mouth, Puff cheeks, and Jaw to your left are no longer offered", () => {
+  it("Open mouth, Puff cheeks, and both jaw movements are no longer offered", () => {
     const offered = OFFERED_GESTURES.map((g) => g.id);
-    for (const id of ["mouthOpen", "cheekPuff", "jawLeft"]) expect(offered).not.toContain(id);
-    expect(offered).toContain("browRaise");
-    expect(offered).toContain("smile");
-    expect(offered).toContain("jawRight");
+    for (const id of ["mouthOpen", "cheekPuff", "jawLeft", "jawRight"]) expect(offered).not.toContain(id);
+    expect(offered).toEqual(["browRaise", "browLower", "smile", "pucker", "winkLeft", "winkRight", "mouthLeft", "mouthRight"]);
   });
 
   it("retired gestures are never ticked by default", () => {

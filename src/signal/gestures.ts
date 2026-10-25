@@ -111,10 +111,10 @@ export const GESTURES: readonly GestureDef[] = [
   },
   {
     id: "jawRight",
-    offered: true,
+    offered: false,
     label: "Jaw to your right",
     prompt: "Slide your jaw toward your right",
-    defaultOn: true,
+    defaultOn: false,
     signal: (s) => v(s, "jawRight"),
   },
   {
@@ -157,8 +157,8 @@ export const GESTURE_IDS: readonly GestureId[] = GESTURES.map((g) => g.id);
 
 /**
  * The gestures calibration offers. Retired on 2026-10-25 because they were too
- * hard for everyone the owner tried them with: Open mouth, Puff cheeks, and
- * Jaw to your left.
+ * hard for everyone the owner tried them with: Open mouth, Puff cheeks, Jaw to
+ * your left, and Jaw to your right.
  */
 export const OFFERED_GESTURES: readonly GestureDef[] = GESTURES.filter((g) => g.offered);
 

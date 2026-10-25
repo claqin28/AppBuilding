@@ -73,6 +73,40 @@ describe("GestureDetector", () => {
   });
 });
 
+describe("GestureDetector release rule (releaseMs)", () => {
+  const withRelease = { ...params, releaseMs: 600 };
+  const armedRelease = () => {
+    const d = new GestureDetector(withRelease);
+    d.arm();
+    return d;
+  };
+
+  it("staying below `on` (but above `off`) for releaseMs counts as relaxed, so the next gesture can fire", () => {
+    // fire, then rest at 0.4 (between off 0.3 and on 0.5) for 1 s, then fire again
+    const seq = [...Array(6).fill(0.8), ...Array(20).fill(0.4), ...Array(6).fill(0.8)];
+    expect(run(armedRelease(), seq)).toHaveLength(2);
+    // without the rule, the second never fires
+    expect(run(armed(), seq)).toHaveLength(1);
+  });
+
+  it("short dips below `on` don't count as relaxed (wobble still fires only once)", () => {
+    const wobble = [0, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.45, 0.55, 0.4, 0.6, 0.35, 0.6, 0.6, 0.6, 0.6];
+    expect(run(armedRelease(), wobble)).toHaveLength(1);
+  });
+
+  it("must be below `on` for the WHOLE release time: popping back above restarts the wait", () => {
+    // 0.5 s below, a moment above, 0.5 s below: never 0.6 s in a row, so no second fire
+    const seq = [...Array(6).fill(0.8), ...Array(10).fill(0.4), 0.6, ...Array(10).fill(0.4), ...Array(6).fill(0.8)];
+    expect(run(armedRelease(), seq)).toHaveLength(1);
+  });
+
+  it("after reset() (face lost), a still-held gesture still doesn't fire", () => {
+    const det = armedRelease();
+    det.reset();
+    expect(run(det, Array(30).fill(0.8), 1000)).toEqual([]);
+  });
+});
+
 describe("progressToward", () => {
   it("is 0 at rest, 1 at the on line", () => {
     expect(progressToward(0.1, 0.1, 0.5)).toBe(0);
