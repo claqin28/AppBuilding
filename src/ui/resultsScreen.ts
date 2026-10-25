@@ -6,7 +6,7 @@ import type { CalibrationResult } from "../signal/calibration";
 import { ControlEngine, DEFAULT_ENGINE } from "../signal/engine";
 import { explainGesture } from "../signal/explain";
 import { gestureDef, type GestureId } from "../signal/gestures";
-import { buildProfile, type Profile } from "../signal/profile";
+import { buildProfile, withReach, type Profile } from "../signal/profile";
 import { ACTIONS, assignActions, conflict, selectGestures, type Action } from "../signal/selection";
 import type { AppContext, Screen } from "./app";
 import { downloadText, formatDuration, h, timestampForFile } from "./dom";
@@ -74,7 +74,7 @@ export class ResultsScreen implements Screen {
       }
       warnings.append(...mappingWarnings(result, map).map((w) => h("li", {}, w)));
       if (profile) {
-        engine = new ControlEngine(profile.bindings, {
+        engine = new ControlEngine(withReach(profile.bindings, this.ctx.settings.reach), {
           ...DEFAULT_ENGINE,
           tauMs: profile.tauMs,
           holdMs: this.ctx.settings.holdMs,

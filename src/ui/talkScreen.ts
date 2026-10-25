@@ -13,7 +13,7 @@ import { Scanner, type Key, type Layout, type ScanMode } from "../keyboard/scann
 import { applyKey } from "../keyboard/typing";
 import { ControlEngine, DEFAULT_ENGINE, type EngineOutput } from "../signal/engine";
 import { gestureDef } from "../signal/gestures";
-import type { Profile } from "../signal/profile";
+import { withReach, type Profile } from "../signal/profile";
 import type { Action } from "../signal/selection";
 import type { AppContext, Screen } from "./app";
 import { h } from "./dom";
@@ -74,7 +74,7 @@ export class TalkScreen implements Screen {
     const hasNext = profile.bindings.some((b) => b.action === "NEXT");
     const mode: ScanMode = s.scanMode === "step" && hasNext ? "step" : "auto";
 
-    this.engine = new ControlEngine(profile.bindings, {
+    this.engine = new ControlEngine(withReach(profile.bindings, s.reach), {
       ...DEFAULT_ENGINE,
       tauMs: profile.tauMs,
       holdMs: s.holdMs,

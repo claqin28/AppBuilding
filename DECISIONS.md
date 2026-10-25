@@ -955,3 +955,53 @@ ended awkwardly (a visible edge where it stopped).
   tinted the "Create a profile" button. Fix: the header now sits in front of it
   (checked: the button is the top element at its own position).
 
+## Talk: slightly more sensitive by default, with a setting (2026-10-25)
+
+The owner reported that Talk "doesn't always work and sense things" and asked for it
+to be slightly more sensitive.
+
+**Possible causes, and which one this fixes:**
+1. **Threshold too high for real use.** Calibration puts `on` halfway between rest
+   and the person's typical *deliberate* movement. Movements made while typing are
+   often smaller, especially when tired. **This is what the change fixes.**
+2. **Not relaxing between gestures.** After a gesture counts, the face must drop
+   below `off` before the next one can. Nothing on screen explained this, so the
+   meters now say "Relax your face to reset". The message appears only after 0.6 s
+   stuck in that state, so it doesn't pop up briefly after every gesture.
+3. **Very low frame rate.** Below about 3 frames a second, frames are more than 300 ms
+   apart and the engine resets every gesture. Not changed; the floating test window
+   (Settings) measures it. If the owner's laptop shows this, it's a separate fix.
+
+**The change:**
+- New setting, Settings → Sensitivity → "Movement needed": how far toward the typical
+  full movement a gesture must go to count.
+  - Default **40%** (was effectively 50%), range 30–60%.
+  - Stored per profile; older profiles get the default.
+- `withReach` (`src/signal/profile.ts`) works the lines out again from the
+  calibration's own `restLevel` and `typicalPeak`, with the same limits as
+  calibration. No recalibration is needed. Talk and the results screen's "Try it" both
+  use it, so "Try it" matches Talk.
+- Calibration's analysis (hit rate, AUC, score) still measures at 50%, so its results
+  and the choice of gestures don't change.
+
+**Evidence, from synthetic test people only (`tests/sensitivity.test.ts`):**
+- Tries **half the size** of calibration's: caught **23%** at the old setting, **97%**
+  at the new default.
+- Tries at 60% size: 97% → 100%.
+- Resting and talking: **no accidental clicks even at 30%**, the most sensitive
+  setting allowed.
+
+**What this does NOT show:** the synthetic people are steadier than real faces and
+rest for only 15 seconds, so they can't measure the real cost in accidental clicks.
+That needs the M4 idle test on real people, which should also record each session's
+sensitivity setting (added to PLAN.md).
+
+**Why the range stops at 30%:** the line must stay clearly above the resting level.
+Below 30%, ordinary face movement at rest gets close to the line. That's a judgment
+call; the synthetic data can't show where real faces start misfiring.
+
+**Found while measuring:** my first measurement showed 5 of 15 tries "always
+missed", whatever the sensitivity. That was a bug in my test harness, not the app:
+it fed overlapping stretches of the recording into one detector, so time ran
+backwards. Re-measured with a fresh detector per try.
+

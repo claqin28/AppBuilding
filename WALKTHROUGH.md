@@ -95,9 +95,20 @@ both be used.
 **Score** (0 to 1) = hitRate × AUC × min(1, gap ÷ 0.30). That's
 *reliable × separable × big enough*. Past a gap of 0.30, more doesn't help.
 
+**Sensitivity (added 2026-10-25), `src/signal/profile.ts: withReach`:** calibration
+*measures* everything with `on` halfway (reach 0.5). Talk then works the lines out
+again from the same `restLevel` and `typicalPeak`, at the person's sensitivity setting
+(Settings → "Movement needed", default **0.4**, range 0.3–0.6):
+`on` = rest + reach × (peak − rest), and `off` = halfway from rest to `on`. Example at
+the default: `on` = 0.05 + 0.4 × 0.80 = **0.37**, `off` = **0.21**. Why: movements made
+while typing are often smaller than calibration's deliberate ones. On synthetic test
+people, tries half the size of calibration's were caught 23% of the time at reach 0.5
+and 97% at 0.4 (`tests/sensitivity.test.ts`).
+
 **Questions:** Why does the rest phase include talking? Why leave-one-out instead of
 testing tries against the threshold they set? What does an AUC of 0.5 mean? Why put
-`on` halfway rather than just above rest?
+`on` halfway rather than just above rest? Why does lowering `on` also lower `off`, and
+when could that make re-arming harder?
 
 ---
 

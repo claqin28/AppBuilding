@@ -9,6 +9,12 @@ export interface Settings {
   scanMs: number;
   holdMs: number;
   refractoryMs: number;
+  /**
+   * Sensitivity: how far from the resting face toward the person's typical full
+   * movement a gesture must go to count (0.4 = 40% of the way). Calibration
+   * measures at 0.5; lower = more sensitive. See withReach in src/signal/profile.ts.
+   */
+  reach: number;
   speechRate: number;
   voiceURI: string;
   clearAfterSpeak: boolean;
@@ -23,6 +29,7 @@ export const DEFAULT_SETTINGS: Settings = {
   scanMs: 1200,
   holdMs: 250,
   refractoryMs: 400,
+  reach: 0.4,
   speechRate: 0.9,
   voiceURI: "",
   clearAfterSpeak: false,
@@ -35,6 +42,7 @@ export const LIMITS = {
   scanMs: { min: 500, max: 4000 },
   holdMs: { min: 100, max: 1500 },
   refractoryMs: { min: 100, max: 2000 },
+  reach: { min: 0.3, max: 0.6 },
   speechRate: { min: 0.5, max: 1.5 },
 };
 

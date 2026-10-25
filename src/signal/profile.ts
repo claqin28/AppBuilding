@@ -2,7 +2,7 @@
  * A person's saved control setup: which gesture does which action, and the
  * thresholds calibration measured. Stored on this device only.
  */
-import type { CalibrationResult } from "./calibration";
+import { DEFAULT_CALIBRATION, thresholdsFor, type CalibrationResult } from "./calibration";
 import { isGestureId, type GestureId } from "./gestures";
 import { ACTIONS, type Action } from "./selection";
 
@@ -68,3 +68,18 @@ export function parseProfile(json: unknown): Profile | null {
   if (!ok || !p.bindings.some((b) => b.action === "SELECT")) return null;
   return p as Profile;
 }
+
+/**
+ * The thresholds to use for a sensitivity setting ("reach"), worked out again
+ * from the resting level and typical peak that calibration measured:
+ *   on  = rest + reach × (typical peak − rest)
+ *   off = halfway between rest and on (the same rule as calibration)
+ * Calibration itself uses reach 0.5. A lower reach is more sensitive: smaller
+ * movements count. The same safety limits as calibration apply (on stays at
+ * least a little above rest, and never above 0.9).
+ */
+export function withReach(bindings: readonly Binding[], reach: number): Binding[] {
+  const cfg = { ...DEFAULT_CALIBRATION, onFraction: reach };
+  return bindings.map((b) => ({ ...b, ...thresholdsFor(b.restLevel, b.typicalPeak, cfg) }));
+}
+

@@ -11,17 +11,25 @@ import { h } from "./dom";
 /** The bar's full width means 1.5 × the threshold, so the tick sits at 2/3. */
 const FULL_SCALE = 1.5;
 const FLASH_MS = 700;
+/**
+ * After a gesture counts, the face must relax below the lower "off" line before
+ * the next one can. If it stays in between for this long, the row says so.
+ * (Shorter than this would show the hint briefly after every gesture.)
+ */
+const STUCK_MS = 600;
 
 export class Meters {
   readonly el = h("div", { class: "meters" });
-  private rows = new Map<Action, { fill: HTMLElement; row: HTMLElement }>();
+  private rows = new Map<Action, { fill: HTMLElement; row: HTMLElement; hint: HTMLElement }>();
   private lastFired = new Map<Action, number>();
+  private waitingSince = new Map<Action, number>();
 
   setChannels(channels: readonly { action: Action; gesture: ChannelState["gesture"] }[]): void {
     this.el.replaceChildren();
     this.rows.clear();
     for (const c of channels) {
       const fill = h("span", { class: "meter-fill" });
+      const hint = h("span", { class: "meter-hint", "aria-live": "polite" });
       const row = h(
         "div",
         { class: "meter-row" },
@@ -32,8 +40,9 @@ export class Meters {
           fill,
           h("span", { class: "meter-tick", style: `left:${(100 / FULL_SCALE).toFixed(1)}%` }),
         ),
+        hint,
       );
-      this.rows.set(c.action, { fill, row });
+      this.rows.set(c.action, { fill, row, hint });
       this.el.append(row);
     }
   }
@@ -47,6 +56,12 @@ export class Meters {
       r.row.classList.toggle("active", c.phase === "holding" || c.phase === "pending");
       // A steady highlight (not a flash) for a moment after firing.
       r.row.classList.toggle("fired", now - (this.lastFired.get(c.action) ?? -Infinity) < FLASH_MS);
+      // Below the "on" line but not yet relaxed enough to count again.
+      const waiting = c.phase === "holding" && c.value < c.on;
+      if (!waiting) this.waitingSince.delete(c.action);
+      else if (!this.waitingSince.has(c.action)) this.waitingSince.set(c.action, now);
+      const stuck = waiting && now - this.waitingSince.get(c.action)! >= STUCK_MS;
+      r.hint.textContent = stuck ? "Relax your face to reset" : "";
     }
   }
 }
