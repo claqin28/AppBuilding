@@ -32,11 +32,11 @@
 
 :root {
   color-scheme: light;
-  --bg: #ececec;
+  --bg: #ffffff;
   --surface: #ffffff;
   --surface-2: #f4f4f4;
   --border: #e3e3e3;
-  --card-border: transparent;
+  --card-border: #e6e6eb;
   --border-strong: #7a7a7a;
   --text: #0d0d0d;
   --muted: #5b5b5b;
@@ -69,8 +69,8 @@
   --logo-mouth: #1a3459;
   --logo-glint: #ffffff;
   --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 12px 32px rgba(16, 24, 40, 0.06);
-  --card-1: #ffffff;
-  --card-2: #f6f8fc;
+  --card-1: #f7f8fb;
+  --card-2: #eef1f6;
   --blue-card-1: #3363c6;
   --blue-card-2: #2450ad;
   --blue-card-text: #ffffff;
@@ -231,6 +231,7 @@ main:focus { outline: none; }
 /* ---------- Header, privacy bar, nav ---------------------------------------- */
 
 .app-header {
+  position: relative; z-index: 2; /* stays in front of the welcome page's glow */
   display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between;
   padding: 18px 28px 14px;
 }
@@ -342,9 +343,22 @@ body.is-onboarding .onboarding { display: block; }
 
 /* Hero: centered, like a product page. The headline appears word by word. */
 .landing-hero {
+  position: relative; isolation: isolate;
   display: grid; justify-items: center; gap: 22px; text-align: center;
-  padding: clamp(48px, 9vw, 120px) 16px clamp(16px, 3vw, 32px); border-radius: 40px;
-  background: radial-gradient(ellipse 70% 85% at 50% 0%, var(--hero-glow), transparent 72%);
+  padding: clamp(48px, 9vw, 120px) 16px clamp(16px, 3vw, 32px);
+}
+/* The soft blue glow behind the hero. It's its own layer, a little larger than the
+   hero, and fades to fully transparent before reaching any edge ("closest-side"),
+   so it never ends in a visible line. Several stops make the fade smooth. */
+.landing-hero::before {
+  content: ""; position: absolute; inset: -140px 0 -60px; z-index: -1; pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    var(--hero-glow) 0%,
+    color-mix(in oklab, var(--hero-glow) 70%, transparent) 35%,
+    color-mix(in oklab, var(--hero-glow) 30%, transparent) 65%,
+    transparent 100%
+  );
 }
 .eyebrow { margin: 0; padding: 7px 16px; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow); color: var(--muted); font-weight: 650; font-size: 0.95rem; }
 .display { font-size: clamp(2.8rem, 6.6vw, 5.4rem); font-weight: 800; letter-spacing: -0.035em; word-spacing: 0.05em; line-height: 1.02; margin: 0; max-width: 12em; }
@@ -423,7 +437,7 @@ body.is-onboarding .onboarding { display: block; }
 .privacy-lead-icon .icon { width: 50%; height: 50%; }
 
 /* Small pictures of the real screens inside the cards (decorative). */
-.mini { margin: auto 0 0; padding: 12px; border-radius: 18px; background: var(--surface-2); list-style: none; }
+.mini { margin: auto 0 0; padding: 12px; border-radius: 18px; background: var(--surface); list-style: none; }
 .mini-results { display: grid; gap: 8px; }
 .mini-results li { display: flex; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--blue-card-2); font-size: 0.95rem; }
 .feature-card.blue .mini { background: rgba(255, 255, 255, 0.12); }

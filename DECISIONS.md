@@ -929,3 +929,29 @@ The owner asked for two changes:
   welcome page and back on the privacy step and in the app, and that the card fades
   up on scroll. All earlier checks still pass.
 
+## White background and a smoother hero glow (2026-10-25)
+
+The owner asked for a white background, and pointed out that the hero's blue glow
+ended awkwardly (a visible edge where it stopped).
+
+- **White page (light theme only; dark is unchanged):** `--bg` changed from #ececec
+  to #ffffff. White cards would vanish on a white page, so:
+  - the landing cards get a very light gray-blue tint (`--card-1`, `--card-2`), in
+    the Apple style
+  - the app's white panels (camera, main, menu bar, privacy bar) get a hairline
+    border (`--card-border` #e6e6eb) on top of the soft shadow
+  - the small screen pictures inside the cards are now white, so they stand out
+    from the tint
+
+  Contrast checks all still pass. For example, gray borders on white are 4.3:1
+  (need 3:1).
+- **Why the glow ended awkwardly:** it was the hero box's own background, brightest
+  right at the box's top edge, so the box clipped it into a hard line and visible
+  sides.
+- **Glow fix:** it's now its own layer, a bit larger than the hero, that fades to
+  fully transparent before reaching any edge (`closest-side`). Several color stops
+  make the fade smooth, so it can't end in a line.
+- **Found by the screenshots:** the bigger glow reached behind the header and
+  tinted the "Create a profile" button. Fix: the header now sits in front of it
+  (checked: the button is the top element at its own position).
+
