@@ -35,6 +35,11 @@ export interface GestureDef {
   prompt: string;
   /** Tested by default? (Rarer gestures are opt-in to keep calibration short.) */
   defaultOn: boolean;
+  /**
+   * Offered in calibration's list at all. Retired gestures (offered: false) stay
+   * defined, so profiles and recordings saved before they were retired still load.
+   */
+  offered: boolean;
   signal: (s: Record<string, number>) => number;
 }
 
@@ -50,6 +55,7 @@ const eitherSide = (s: Record<string, number>, left: string, right: string): num
 export const GESTURES: readonly GestureDef[] = [
   {
     id: "browRaise",
+    offered: true,
     label: "Raise eyebrows",
     prompt: "Raise your eyebrows",
     defaultOn: true,
@@ -57,6 +63,7 @@ export const GESTURES: readonly GestureDef[] = [
   },
   {
     id: "browLower",
+    offered: true,
     label: "Frown",
     prompt: "Lower your eyebrows into a frown",
     defaultOn: true,
@@ -64,13 +71,15 @@ export const GESTURES: readonly GestureDef[] = [
   },
   {
     id: "mouthOpen",
+    offered: false,
     label: "Open mouth",
     prompt: "Open your mouth wide",
-    defaultOn: true,
+    defaultOn: false,
     signal: (s) => v(s, "jawOpen"),
   },
   {
     id: "smile",
+    offered: true,
     label: "Smile",
     prompt: "Smile big",
     defaultOn: true,
@@ -78,6 +87,7 @@ export const GESTURES: readonly GestureDef[] = [
   },
   {
     id: "pucker",
+    offered: true,
     label: "Pucker lips",
     prompt: "Pucker your lips, like a kiss",
     defaultOn: false,
@@ -85,20 +95,23 @@ export const GESTURES: readonly GestureDef[] = [
   },
   {
     id: "cheekPuff",
+    offered: false,
     label: "Puff cheeks",
     prompt: "Puff out your cheeks",
-    defaultOn: true,
+    defaultOn: false,
     signal: (s) => v(s, "cheekPuff"),
   },
   {
     id: "jawLeft",
+    offered: false,
     label: "Jaw to your left",
     prompt: "Slide your jaw toward your left",
-    defaultOn: true,
+    defaultOn: false,
     signal: (s) => v(s, "jawLeft"),
   },
   {
     id: "jawRight",
+    offered: true,
     label: "Jaw to your right",
     prompt: "Slide your jaw toward your right",
     defaultOn: true,
@@ -108,6 +121,7 @@ export const GESTURES: readonly GestureDef[] = [
     // A normal blink closes BOTH eyes, so left minus right stays near 0.
     // Only closing one eye on purpose makes this number go up.
     id: "winkLeft",
+    offered: true,
     label: "Close left eye",
     prompt: "Close only your left eye",
     defaultOn: true,
@@ -115,6 +129,7 @@ export const GESTURES: readonly GestureDef[] = [
   },
   {
     id: "winkRight",
+    offered: true,
     label: "Close right eye",
     prompt: "Close only your right eye",
     defaultOn: true,
@@ -122,6 +137,7 @@ export const GESTURES: readonly GestureDef[] = [
   },
   {
     id: "mouthLeft",
+    offered: true,
     label: "Lips to your left",
     prompt: "Pull your lips toward your left",
     defaultOn: false,
@@ -129,6 +145,7 @@ export const GESTURES: readonly GestureDef[] = [
   },
   {
     id: "mouthRight",
+    offered: true,
     label: "Lips to your right",
     prompt: "Pull your lips toward your right",
     defaultOn: false,
@@ -137,6 +154,13 @@ export const GESTURES: readonly GestureDef[] = [
 ];
 
 export const GESTURE_IDS: readonly GestureId[] = GESTURES.map((g) => g.id);
+
+/**
+ * The gestures calibration offers. Retired on 2026-10-25 because they were too
+ * hard for everyone the owner tried them with: Open mouth, Puff cheeks, and
+ * Jaw to your left.
+ */
+export const OFFERED_GESTURES: readonly GestureDef[] = GESTURES.filter((g) => g.offered);
 
 const BY_ID = new Map(GESTURES.map((g) => [g.id, g]));
 

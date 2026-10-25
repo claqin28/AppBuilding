@@ -126,8 +126,9 @@ when could that make re-arming harder?
 - **Every** group of 3 usable movements is tried, and the best allowed one wins. If no
   group of 3 is allowed, it tries 2, then 1.
 
-Why try everything instead of a clever shortcut? With 12 candidates there are at most
-220 groups of 3, which takes microseconds, and trying them all *guarantees* the best
+Why try everything instead of a clever shortcut? Calibration offers 9 candidates (12
+are defined, and 3 were retired on 2026-10-25, see below), so there are at most 84
+groups of 3 (220 if all 12 were tested), which takes microseconds, and trying them all *guarantees* the best
 group. A greedy shortcut ("take the best, then the next best that doesn't conflict")
 can miss better combinations.
 
@@ -391,9 +392,18 @@ left is +x.
 | Raise eyebrows, Frown | left eyebrow + right eyebrow |
 | Close left eye / right eye | left eye / right eye |
 | Smile, Pucker, Lips left/right | lips |
-| Open mouth | lips + jaw/chin |
-| Jaw left/right | jaw/chin |
-| Puff cheeks | left cheek + right cheek |
+| Open mouth *(retired)* | lips + jaw/chin |
+| Jaw left *(retired)* / Jaw right | jaw/chin |
+| Puff cheeks *(retired)* | left cheek + right cheek |
+
+**Retired gestures (2026-10-25):** Open mouth, Puff cheeks, and Jaw to your left are
+no longer offered in calibration, because they were too hard for everyone the owner
+tried them with. They stay defined in `src/signal/gestures.ts` (`offered: false`), so
+older saved profiles and recordings still load and still show their results. Nothing
+offered tests the **cheeks** any more, so the cheeks get no dot and are drawn like
+the rest of the face, with "no test for this area" in the table. That's better than a
+red "not tested yet" dot that could never be cleared (`TESTABLE_REGIONS` in
+`src/signal/movementMap.ts`).
 
 **Step 3: one number per gesture.** The person picks which number to show:
 - **Reliability** = the calibration hit rate (0–100%), **except** that a movement

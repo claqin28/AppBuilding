@@ -1,5 +1,5 @@
 /**
- * Small dots on the 3D head, one per face region, instead of big text labels
+ * Small dots on the 3D head, one per testable face region, instead of big text labels
  * that cover the mesh. Red = not tested yet (calibration tests it); a tested
  * region's dot uses its result color. Hovering a dot shows its name and
  * number. The Face map screen's table always has the same information, so
@@ -34,7 +34,7 @@ export class MapNodes {
     for (const n of regionNodes(scores)) {
       const dot = this.dots.get(n.region)!;
       const p = head.project(regionCentre(shape, regions[n.region]));
-      dot.hidden = !p.visible;
+      dot.hidden = !p.visible || n.state === "unavailable"; // nothing can test it, so no dot
       dot.dataset.state = n.state;
       dot.dataset.label = n.label;
       dot.style.background = n.color ?? "";

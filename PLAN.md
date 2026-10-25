@@ -112,7 +112,7 @@ M6–M7 → M8. **M9 is cut first.**
   camera still runs, because the model needs it. This mode keeps your face off the
   screen, which matters for screen-sharing, demo videos, and people walking by. It
   doesn't change what's processed, which never leaves the device in either mode.
-- **Live per-gesture bars:** the 12 candidate gestures (not the 51 raw signals), each
+- **Live per-gesture bars:** the 9 offered candidate gestures (not the 51 raw signals), each
   with its rest level and thresholds marked once calibration exists.
 - Drawing is throttled (about 15–30 fps), with no animation effects and no flashing.
 
@@ -122,6 +122,11 @@ M6–M7 → M8. **M9 is cut first.**
 - (b) **Fixed-phrase typing:** characters per minute and error rate.
 - **Decided 2026-10-22:** the 8 test phrases (written by the owner) and the Default
   gestures are in `src/evaluation/setup.ts`.
+- **Needs the owner's decision (2026-10-25):** the Default condition uses **Open
+  mouth** as SELECT. On 2026-10-25 Open mouth was retired from calibration because it
+  was too hard for everyone the owner tried. Keeping it in Default would make the
+  baseline look worse for a reason the owner already knows about. That's fair only
+  if it's what real tools ship with, and then the report must say so.
 - (c) **Three conditions, all reported honestly even if Tessera doesn't win:**
   1. **Default:** fixed gestures with fixed default thresholds.
   2. **Hand-tuned:** the same fixed gestures, with thresholds the person sets once

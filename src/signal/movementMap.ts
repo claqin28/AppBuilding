@@ -25,7 +25,7 @@
  * This is a prototype visualization, not a medical or clinical assessment.
  */
 import type { CalibrationResult, GestureStats } from "./calibration";
-import { gestureDef, type GestureId } from "./gestures";
+import { gestureDef, OFFERED_GESTURES, type GestureId } from "./gestures";
 
 export type RegionId = "leftBrow" | "rightBrow" | "leftEye" | "rightEye" | "lips" | "leftCheek" | "rightCheek" | "jaw";
 
@@ -68,6 +68,13 @@ export const GESTURE_REGIONS: Record<GestureId, readonly RegionId[]> = {
   jawRight: ["jaw"],
   cheekPuff: ["leftCheek", "rightCheek"],
 };
+
+/**
+ * Regions that at least one offered gesture tests. After Puff cheeks was retired,
+ * nothing tests the cheeks, so they're shown as "no test for this area" instead
+ * of a red "not tested yet" dot that could never be cleared.
+ */
+export const TESTABLE_REGIONS: ReadonlySet<RegionId> = new Set(OFFERED_GESTURES.flatMap((g) => GESTURE_REGIONS[g.id]));
 
 export type MapMetric = "reliability" | "range";
 
@@ -167,7 +174,9 @@ export function pointColors(
 ): string[] {
   const colors = new Array<string>(pointCount).fill(BASE_COLOR);
   for (const r of [...REGION_IDS].reverse()) {
-    const color = colorFor(scores ? scores[r].value : null);
+    const value = scores ? scores[r].value : null;
+    // An untested region nothing can test looks like the rest of the face, not "not tested".
+    const color = value === null && !TESTABLE_REGIONS.has(r) ? BASE_COLOR : colorFor(value);
     for (const i of regions[r]) if (i >= 0 && i < pointCount) colors[i] = color;
   }
   return colors;
@@ -180,7 +189,8 @@ export function pointColors(
  */
 export interface RegionNode {
   region: RegionId;
-  state: "untested" | "tested";
+  /** "unavailable": not tested, and no offered gesture can test it (no dot is drawn). */
+  state: "untested" | "tested" | "unavailable";
   /** The dot's color for tested regions; null for untested (drawn red). */
   color: string | null;
   /** e.g. "Lips · 100%" or "Left eye · not tested yet". */
@@ -190,9 +200,10 @@ export interface RegionNode {
 export function regionNodes(scores: Record<RegionId, RegionScore> | null): RegionNode[] {
   return REGION_IDS.map((r): RegionNode => {
     const v = scores?.[r].value ?? null;
-    return v === null
+    if (v !== null) return { region: r, state: "tested", color: colorFor(v), label: `${REGION_LABELS[r]} · ${percent(v)}` };
+    return TESTABLE_REGIONS.has(r)
       ? { region: r, state: "untested", color: null, label: `${REGION_LABELS[r]} · not tested yet` }
-      : { region: r, state: "tested", color: colorFor(v), label: `${REGION_LABELS[r]} · ${percent(v)}` };
+      : { region: r, state: "unavailable", color: null, label: `${REGION_LABELS[r]} · no test for this area` };
   });
 }
 

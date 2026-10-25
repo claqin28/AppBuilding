@@ -21,6 +21,7 @@ import {
   pointColors,
   REGION_IDS,
   REGION_LABELS,
+  TESTABLE_REGIONS,
   regionScores,
   regionText,
   type MapMetric,
@@ -274,7 +275,9 @@ export class FaceMapScreen implements Screen {
         const detail =
           s && s.gestures.length
             ? s.gestures.map((g) => `${gestureDef(g.id).label} ${percent(g.value)}${g.usable ? "" : " (not reliable)"}`).join(", ")
-            : "not tested";
+            : TESTABLE_REGIONS.has(r)
+              ? "not tested"
+              : "no test for this area";
         return h("tr", {}, h("th", { scope: "row" }, REGION_LABELS[r]), h("td", {}, best === null ? "–" : percent(best)), h("td", {}, detail));
       }),
     );

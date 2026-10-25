@@ -1044,3 +1044,32 @@ M3).
 **Still not verified:** that sound actually plays on a real Mac. Only the owner's
 laptop can confirm that.
 
+## Retired from calibration: Open mouth, Puff cheeks, Jaw to your left (2026-10-25)
+
+The owner tried calibration with several people and found these three "way too hard
+for everyone", so they're no longer offered. This is the owner's informal observation
+from people they tried it with. No numbers were recorded.
+
+- **How:** each gesture now has `offered`; these three are `offered: false` and are
+  never ticked by default. Calibration lists only offered gestures
+  (`OFFERED_GESTURES`).
+- **Why not delete them:**
+  - Profiles and recordings saved before today use their names, so they must still
+    load. Someone whose saved setup uses Puff cheeks keeps a working setup (tested).
+  - The synthetic test person still includes them. They test the scoring logic: the
+    puff/smile overlap, and a movement too small to use.
+- **Calibration is shorter:** the default list goes from 9 movements (about 4.4 min)
+  to 6 (about 3 min). Each movement costs about 27 seconds: 5 tries plus an intro.
+- **Face map:** nothing offered tests the cheeks any more. Their red "not tested yet"
+  dot could never be cleared, so untestable regions get no dot, are drawn like the
+  rest of the face, and the table says "no test for this area". If an older
+  calibration did test Puff cheeks, its results still show (tested). The jaw is still
+  testable, via Jaw to your right.
+- **Two questions for the owner:**
+  1. **Jaw to your right** is the same movement as Jaw to your left, mirrored. It's
+     probably just as hard, but it wasn't on the list, so it stays for now.
+  2. **The M4 Default condition uses Open mouth as SELECT** (the owner's choice from
+     2026-10-22). Now that it's known to be hard, keeping it would make the baseline
+     look worse for a known reason. Recorded in PLAN.md as a decision to make before
+     M4.
+

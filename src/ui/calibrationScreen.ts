@@ -9,7 +9,7 @@
  * A try interrupted by a pause is simply redone.
  */
 import { analyzeCalibration, DEFAULT_CALIBRATION } from "../signal/calibration";
-import { gestureDef, gestureSignals, GESTURES, type GestureId } from "../signal/gestures";
+import { gestureDef, gestureSignals, OFFERED_GESTURES, type GestureId } from "../signal/gestures";
 import { TraceRecorder, traceFrames } from "../signal/trace";
 import type { BlendshapeFrame } from "../signal/types";
 import type { AppContext, Screen } from "./app";
@@ -75,7 +75,7 @@ export class CalibrationScreen implements Screen {
 
   private renderIntro(): void {
     this.root.replaceChildren();
-    const boxes = GESTURES.map((g) => {
+    const boxes = OFFERED_GESTURES.map((g) => {
       const box = h("input", { type: "checkbox", value: g.id, checked: g.defaultOn });
       return { id: g.id, box, label: h("label", { class: "check-item" }, box, " ", g.label) };
     });

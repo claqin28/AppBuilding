@@ -12,6 +12,7 @@ import {
   regionNodes,
   regionScores,
   regionText,
+  TESTABLE_REGIONS,
   type RegionId,
 } from "../src/signal/movementMap";
 import { traceFrames } from "../src/signal/trace";
@@ -148,14 +149,25 @@ describe("regionText", () => {
 });
 
 describe("regionNodes (the dots on the 3D head)", () => {
-  it("nothing calibrated yet: every region gets a red 'not tested yet' dot", () => {
+  it("nothing calibrated yet: every testable region gets a red 'not tested yet' dot; the cheeks get none", () => {
     const nodes = regionNodes(null);
     expect(nodes).toHaveLength(8);
     for (const n of nodes) {
-      expect(n.state).toBe("untested");
       expect(n.color).toBeNull();
-      expect(n.label).toMatch(/not tested yet$/);
+      if (n.region === "leftCheek" || n.region === "rightCheek") {
+        // Puff cheeks was retired, so nothing can test the cheeks any more.
+        expect(n.state).toBe("unavailable");
+        expect(n.label).toMatch(/no test for this area$/);
+      } else {
+        expect(n.state).toBe("untested");
+        expect(n.label).toMatch(/not tested yet$/);
+      }
     }
+  });
+
+  it("an older calibration that tested Puff cheeks still shows the cheeks as tested", () => {
+    const nodes = regionNodes(regionScores(result([stat("cheekPuff", 1, 0.3)]), "reliability"));
+    expect(nodes.find((n) => n.region === "leftCheek")).toMatchObject({ state: "tested", label: "Left cheek · 100%" });
   });
 
   it("tested regions use their result color and show the number; the rest stay untested", () => {
@@ -168,6 +180,23 @@ describe("regionNodes (the dots on the 3D head)", () => {
   it("a tested movement that scored 0% is tested, not 'not tested'", () => {
     const nodes = regionNodes(regionScores(result([stat("cheekPuff", 0, 0.2, false, ["inconsistent"])]), "reliability"));
     expect(nodes.find((n) => n.region === "leftCheek")).toMatchObject({ state: "tested", label: "Left cheek · 0%" });
+  });
+});
+
+describe("retired gestures and the face regions", () => {
+  it("the cheeks can't be tested any more; the jaw still can (Jaw to your right)", () => {
+    expect(TESTABLE_REGIONS.has("leftCheek")).toBe(false);
+    expect(TESTABLE_REGIONS.has("rightCheek")).toBe(false);
+    expect(TESTABLE_REGIONS.has("jaw")).toBe(true);
+    expect(TESTABLE_REGIONS.has("lips")).toBe(true);
+  });
+
+  it("untestable regions are colored like the rest of the face, not 'not tested'", () => {
+    const regions = { leftBrow: [0], rightBrow: [1], leftEye: [2], rightEye: [3], lips: [4], leftCheek: [5], rightCheek: [6], jaw: [7] };
+    const colors = pointColors(null, regions, 8);
+    expect(colors[5]).toBe(BASE_COLOR);
+    expect(colors[6]).toBe(BASE_COLOR);
+    expect(colors[4]).toBe(NOT_TESTED_COLOR);
   });
 });
 
