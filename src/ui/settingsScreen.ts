@@ -1,8 +1,9 @@
-/** Settings: timing, voice, saved data, and test tools (replay a recording). */
+/** Settings: timing, voice, saved data, and test tools (replay a recording, floating window test). */
 import { analyzeCalibration } from "../signal/calibration";
 import { parseTrace, traceFrames } from "../signal/trace";
 import type { AppContext, Screen } from "./app";
 import { h, pickTextFile } from "./dom";
+import { floatingWindowSupported, openFloatingTest } from "./floatingTest";
 import { onDeviceVoices, speak, speakErrorMessage, voicesReady } from "./speech";
 import { LIMITS, type Settings } from "../storage/settings";
 
@@ -100,6 +101,15 @@ export class SettingsScreen implements Screen {
         h("button", { class: "mid-button", onclick: () => this.loadReplay() }, "Replay a recording instead of the camera"),
         h("button", { class: "mid-button", onclick: () => this.analyzeFile() }, "Analyze a saved calibration recording"),
       ),
+      h("h3", {}, "Experimental: floating window test"),
+      h(
+        "p",
+        {},
+        "Opens a small window that stays on top of other apps and shows how fast face tracking is running. Use it to check whether tracking keeps going while you use another app or minimize Chrome. It only shows numbers: it doesn't control anything, and nothing is saved or sent.",
+      ),
+      floatingWindowSupported()
+        ? h("button", { class: "mid-button", onclick: () => void openFloatingTest(this.ctx) }, "Open floating test window")
+        : h("p", { class: "hint" }, "This browser can't open floating windows. It needs Chrome 116 or newer on a computer."),
     );
   }
 

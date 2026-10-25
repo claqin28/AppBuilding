@@ -780,3 +780,38 @@ current app, added to the hardening list: the badge still says "Tracking".
   tested.
 - So this is promising but not proof. Next check: a real Windows or macOS laptop.
 
+## Floating window test button, and a tab icon (2026-10-25)
+
+**Why a button:** the container can't test the realistic cases (Chrome minimized,
+another app on top), so the owner needs a way to check on a real laptop. Settings →
+Testing tools → "Experimental: floating window test" opens a floating window
+(`src/ui/floatingTest.ts`) that shows:
+- frames per second
+- whether gestures can count right now, and if not, why
+- the longest wait between frames, against the engine's 300 ms limit
+- the lowest rate seen, and how many seconds were too slow for gestures
+
+**Design choices:**
+- **It only shows numbers.** It doesn't control anything, and nothing is saved or
+  sent (tested: no outside requests).
+- **It updates on the floating window's own timer,** so if the Tessera tab is slowed
+  down, the window shows it rather than freezing on an old number.
+- **The "can gestures count?" logic** is a small pure function with unit tests
+  (`src/signal/trackingHealth.ts`). The hardening fix for hidden tabs can reuse it.
+- **Warm-up:** "lowest so far" ignores the first 3 seconds after frames start. My
+  first version counted from when the window opened, so camera start-up showed up
+  as a false low of 2 frames/s.
+- **Order:** the window opens before the camera starts, because Chrome only allows
+  the window right after a click.
+
+**Tested in windowed Chrome 141:** with the Tessera tab hidden behind another tab,
+the window kept showing about 7 frames/s and "Yes: gestures can count". A second
+click reuses the same window, and closing it unsubscribes cleanly.
+
+**Tab icon:** that test also found a 404 for `/favicon.ico` on every real-Chrome visit.
+The app had no tab icon, and headless tests never ask for one, so it went unnoticed.
+Added `public/favicon.svg`: the 48 px face logo in the light theme, exported with its
+colors baked in as plain hex. If the logo changes, the icon must be re-exported. The
+export script isn't in the repo, because it needs Playwright, which the project
+doesn't depend on.
+

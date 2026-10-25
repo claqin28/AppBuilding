@@ -73,7 +73,7 @@ Audited 2026-10-19 by re-running every check on the current code (see DECISIONS)
 | M8 | Word prediction | Planned |
 | M9 | Adaptive practice games | Planned. **First to cut** |
 | M10 | Polish + PWA install (PWA layer built last) | Planned |
-| F | Floating mini-keyboard (Chrome's Document Picture-in-Picture) | 💡 **Idea, not scheduled** (owner, 2026-10-25). Feasibility test done: promising, not yet proven on a real computer |
+| F | Floating mini-keyboard (Chrome's Document Picture-in-Picture) | 💡 **Idea, not scheduled** (owner, 2026-10-25). Feasibility test done: promising, not yet proven on a real computer. **Settings → "Open floating test window"** lets the owner check on a real laptop |
 
 **Order (owner's priority, 2026-10-19):** finish and verify M1–M4 and H first (R and
 V1 are part of finishing M1–M3 to the locked spec). Then **G → V2a → P → V2b**. Cut M9
@@ -330,7 +330,8 @@ the device, no server.
   one open, tracking stayed at full speed. Not yet tested on a real computer, with
   Chrome minimized, or with another app on top.
 - **Before building:** repeat the test on a real laptop (Windows or macOS), then M4 and
-  H come first.
+  H come first. The test tool for that is built: Settings → Experimental → "Open
+  floating test window" (2026-10-25).
 
 ## Proposed, not approved (won't be built unless you say so)
 
