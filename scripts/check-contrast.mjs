@@ -43,6 +43,13 @@ const checks = [
   // Logo: the eyes and mouth must stand out from the face.
   ["logo-eye", "logo-lit", UI, "logo eyes vs. lit face"], ["logo-mouth", "logo-lips", UI, "logo smile line vs. lips"],
   ["logo-glint", "logo-eye", UI, "eye highlight vs. eye"],
+  // Welcome page: cards, hero, the 3D demo frame, and the red "not tested yet" dots.
+  ["text", "card-2", 7, "text on cards (darker end)"], ["muted", "card-2", TEXT, "secondary text on cards"],
+  ["blue-card-text", "blue-card-1", TEXT, "text on the blue card (lighter end)"], ["blue-card-muted", "blue-card-1", TEXT, "secondary text on the blue card"],
+  ["blue-card-text", "blue-card-pill", UI, "highlighted word on the blue card (large text)"], ["pill-text", "pill-bg", TEXT, "highlighted word in card titles"],
+  ["text", "hero-glow", 7, "headline on the hero glow"], ["muted", "hero-glow", TEXT, "hero text on the glow"],
+  ["text", "frame-2", 7, "demo note under the 3D face"], ["muted", "frame-2", TEXT, "demo legend under the 3D face"],
+  ["node-untested", "map-bg", UI, "red dot on the 3D face"], ["node-untested", "surface", UI, "red dot in the legend"],
 ];
 
 let failed = 0;

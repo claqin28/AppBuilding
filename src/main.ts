@@ -344,8 +344,10 @@ const onboarding = new Onboarding(onboardingRoot, {
     return requestPersistence();
   },
   ensureCamera: () => ctx.ensureCamera(),
+  subscribe: (fn) => ctx.subscribe(fn),
   finish: () => enterApp(),
   cancel: () => {
+    onboarding.leave();
     document.body.classList.remove("is-onboarding");
     show("setup");
   },
@@ -354,6 +356,7 @@ const onboarding = new Onboarding(onboardingRoot, {
 $("header-signup").addEventListener("click", () => onboarding.showNickname());
 
 function enterApp(): void {
+  onboarding.leave();
   document.body.classList.remove("is-onboarding");
   show(ctx.profile ? "talk" : "setup");
 }

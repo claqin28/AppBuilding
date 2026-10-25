@@ -15,8 +15,11 @@
  */
 import type { PersistenceResult } from "../storage/profileDb";
 import { MAX_NICKNAME } from "../storage/schema";
+import type { DetectionListener } from "../vision/tracker";
 import { h } from "./dom";
-import { faceLogo } from "./faceLogo";
+import { faceLogo, replayLogo } from "./faceLogo";
+import { LandingFace } from "./landingFace";
+import { REVEALED, revealOnScroll, splitWords } from "./reveal";
 
 export interface OnboardingActions {
   /** Profiles already saved on this device ("Welcome back"). */
@@ -26,6 +29,8 @@ export interface OnboardingActions {
   /** Creates a profile and makes it active. Throws with a plain-language message on failure. */
   createProfile(nickname: string): Promise<PersistenceResult>;
   ensureCamera(): Promise<boolean>;
+  /** Camera detections (for the welcome page's live 3D face). */
+  subscribe(fn: DetectionListener): () => void;
   /** Leaves onboarding and opens the app's camera check. */
   finish(): void;
   /** Returns to the app without changing anything (used when saving a guest session). */
@@ -39,6 +44,8 @@ export class Onboarding {
   private persistence: PersistenceResult = "unknown";
   /** The profile used last time, offered first on the welcome page. */
   private lastId: string | null = null;
+  /** Things to stop when the welcome page goes away (3D view, scroll watcher). */
+  private teardown: (() => void)[] = [];
 
   constructor(
     private root: HTMLElement,
@@ -49,13 +56,33 @@ export class Onboarding {
     if (opts.lastId !== undefined) this.lastId = opts.lastId;
     const profiles = await this.actions.listProfiles().catch(() => []);
     const last = profiles.find((p) => p.id === this.lastId);
+    this.stop();
+
+    const demo = new LandingFace({ ensureCamera: () => this.actions.ensureCamera(), subscribe: (fn) => this.actions.subscribe(fn) });
+    const demoSection = h(
+      "section",
+      { class: "landing-section", id: "ob-demo", "aria-labelledby": "ob-demo-title" },
+      sectionHead("ob-demo-title", "See what Tessera sees", "Your face, as 468 points. Try it: the mesh follows you."),
+      h("div", { class: "reveal" }, demo.el),
+    );
+
+    const logo = faceLogo({ size: 132 });
+    const logoWrap = h("div", { class: "start-logo reveal" }, logo);
+    logoWrap.addEventListener(REVEALED, () => replayLogo(logo));
     const start = h(
       "section",
-      { class: "ob-section", id: "ob-start", "aria-labelledby": "ob-start-title", tabindex: "-1" },
+      { class: "landing-section start-section", id: "ob-start", "aria-labelledby": "ob-start-title", tabindex: "-1" },
+      logoWrap,
+      h(
+        "div",
+        { class: "section-head reveal" },
+        h("h2", { class: "section-title", id: "ob-start-title" }, "How do you want to start?"),
+        h("p", { class: "section-sub" }, "Setting this up for someone else? Every step works with a mouse, and no typing is needed."),
+      ),
       profiles.length
         ? h(
             "div",
-            { class: "ob-returning", "aria-label": "Profiles on this device" },
+            { class: "ob-returning reveal", "aria-label": "Profiles on this device" },
             h("h3", {}, "Welcome back"),
             h(
               "div",
@@ -66,11 +93,11 @@ export class Onboarding {
             ),
           )
         : "",
-      h("h3", { id: "ob-start-title" }, "How do you want to start?"),
       h(
         "div",
         { class: "ob-choices" },
         choice(
+          0,
           "Create a profile on this device",
           "Saves your setup and progress in this browser only. Just a nickname: no email, no password, no online account.",
           "Create a profile",
@@ -78,6 +105,7 @@ export class Onboarding {
           () => this.showNickname(),
         ),
         choice(
+          1,
           "Try as a guest",
           "Nothing is saved. Closing or reloading the page erases everything.",
           "Start as a guest",
@@ -89,63 +117,110 @@ export class Onboarding {
           },
         ),
       ),
-      h("p", { class: "hint" }, "Setting this up for someone else? Every step works with a mouse, and no typing is needed."),
     );
-    const toStart = () => {
-      start.scrollIntoView({ block: "start" });
-      start.focus();
+
+    const scrollTo = (target: HTMLElement) => () => {
+      target.scrollIntoView({ block: "start" });
+      target.focus({ preventScroll: true });
     };
-    // Returning: continue in one click, or see every option. New: get started.
+    // Returning: continue in one click, or see every option. New: get started, or see the demo.
     const heroActions = last
       ? h(
           "div",
           { class: "hero-actions" },
           h("button", { class: "pill-button", onclick: () => void this.actions.continueAs(last.id) }, `Continue as ${last.nickname}`),
-          h("button", { class: "pill-button secondary", onclick: toStart }, "Other options"),
+          h("button", { class: "pill-button secondary", onclick: scrollTo(start) }, "Other options"),
         )
-      : h("div", { class: "hero-actions" }, h("button", { class: "pill-button", onclick: toStart }, "Get started"));
-    this.root.replaceChildren(
-      h(
-        "div",
-        { class: "ob-welcome" },
-        h(
+      : h(
           "div",
-          { class: "hero" },
-          h(
-            "section",
-            { class: "hero-card hero-text" },
-            h("h2", { class: "display" }, "Type and speak with small face movements."),
-            h(
-              "p",
-              { class: "lead" },
-              "Tessera finds the face movements that work best for you, then turns them into an on-screen keyboard you control with your face. For people who can't rely on their hands or their voice.",
-            ),
-            heroActions,
-          ),
-          h(
-            "section",
-            { class: "hero-card hero-visual", "aria-label": "Tessera logo" },
-            h("span", { class: "chip" }, "Calibrated to you · runs on your device"),
-            faceLogo({ size: 360, animate: true, label: "Tessera logo: a geometric face made of triangles" }),
-          ),
-        ),
-        h(
-          "ul",
-          { class: "ob-features" },
-          feature("Finds your best movements", "A short calibration tests movements like raising your eyebrows or closing one eye, and picks the ones that work reliably for you."),
-          feature("Type and speak", "Build a message on a scanning keyboard and have it spoken aloud, or pick a quick phrase."),
-          feature("Private by design", "Everything runs in this browser tab. Your camera video never leaves your device."),
-        ),
-        start,
+          { class: "hero-actions" },
+          h("button", { class: "pill-button", onclick: scrollTo(start) }, "Get started"),
+          h("button", { class: "pill-button secondary", onclick: scrollTo(demoSection) }, "See it follow your face"),
+        );
+
+    const page = h(
+      "div",
+      { class: "ob-welcome" },
+      h(
+        "section",
+        { class: "landing-hero" },
+        h("p", { class: "eyebrow" }, "Calibrated to you · runs on your device"),
+        h("h2", { class: "display" }, ...splitWords("Type and speak with small face movements.")),
         h(
           "p",
-          { class: "hint" },
-          "If someone's speech is reliable, voice control may work better. Tessera is for when it isn't.",
+          { class: "lead" },
+          "Tessera finds the face movements that work best for you, then turns them into an on-screen keyboard you control with your face. For people who can't rely on their hands or their voice.",
+        ),
+        heroActions,
+      ),
+      demoSection,
+      h(
+        "section",
+        { class: "landing-section", "aria-labelledby": "ob-how-title" },
+        sectionHead("ob-how-title", "How it works", "Set up once, then type with your face."),
+        h(
+          "div",
+          { class: "card-grid three" },
+          featureCard(
+            0,
+            "blue",
+            "Step 1",
+            ["Tessera ", pill("finds"), " your movements"],
+            "A short calibration asks for each movement five times, then keeps the ones that work reliably for you.",
+            miniResults(),
+          ),
+          featureCard(
+            1,
+            "",
+            "Step 2",
+            ["Type with a ", pill("scanning"), " keyboard"],
+            "A highlight moves across the keys. One movement selects; another can move the highlight.",
+            miniKeyboard(),
+          ),
+          featureCard(
+            2,
+            "",
+            "Step 3",
+            ["Your words, ", pill("spoken")],
+            "Speak what you typed, or pick a saved phrase. Tessera uses voices built into your computer.",
+            miniMessage(),
+          ),
         ),
       ),
+      h(
+        "section",
+        { class: "landing-section", "aria-labelledby": "ob-privacy-title" },
+        sectionHead("ob-privacy-title", "Private by design", "Everything runs in this browser tab."),
+        h(
+          "div",
+          { class: "card-grid two" },
+          infoCard(0, "Your video stays here", "Camera video is processed in this tab. It's never recorded, saved, or sent anywhere."),
+          infoCard(1, "No microphone", "Tessera never listens to your voice."),
+          infoCard(2, "No account, no server", "A profile is just a nickname saved in this browser. Guests save nothing at all."),
+          infoCard(3, "You choose what to share", "Nothing is sent automatically. Downloads happen only when you click them."),
+        ),
+      ),
+      start,
+      h(
+        "p",
+        { class: "hint landing-note" },
+        "If someone's speech is reliable, voice control may work better. Tessera is for when it isn't.",
+      ),
     );
+
+    this.root.replaceChildren(page);
+    this.teardown.push(() => demo.dispose(), revealOnScroll(page));
     this.root.focus();
     window.scrollTo(0, 0);
+  }
+
+  /** Called when onboarding closes: stops the welcome page's 3D view and animations. */
+  leave(): void {
+    this.stop();
+  }
+
+  private stop(): void {
+    for (const fn of this.teardown.splice(0)) fn();
   }
 
   /** Step: choose a nickname (optional; suggestions mean no typing is needed). */
@@ -282,21 +357,71 @@ export class Onboarding {
   }
 
   private render(...children: (Node | string)[]): void {
+    this.stop();
     this.root.replaceChildren(h("div", { class: "ob-card" }, ...children));
     this.root.focus();
     window.scrollTo(0, 0);
   }
 }
 
-function feature(title: string, text: string): HTMLElement {
-  return h("li", { class: "ob-feature" }, h("strong", {}, title), h("span", {}, text));
+function sectionHead(id: string, title: string, sub: string): HTMLElement {
+  return h("div", { class: "section-head reveal" }, h("h2", { class: "section-title", id }, title), h("p", { class: "section-sub" }, sub));
 }
 
-function choice(title: string, text: string, button: string, primary: boolean, onClick: () => void): HTMLElement {
+/** A highlighted word inside a card title. */
+function pill(text: string): HTMLElement {
+  return h("span", { class: "title-pill" }, text);
+}
+
+function featureCard(i: number, variant: string, step: string, title: (string | HTMLElement)[], text: string, visual: HTMLElement): HTMLElement {
+  return h(
+    "article",
+    { class: `feature-card reveal ${variant}`.trim(), style: `--i:${i}` },
+    h("p", { class: "card-step" }, step),
+    h("h3", {}, ...title),
+    h("p", {}, text),
+    visual,
+  );
+}
+
+function infoCard(i: number, title: string, text: string): HTMLElement {
+  return h("article", { class: "info-card reveal", style: `--i:${i}` }, h("h3", {}, title), h("p", {}, text));
+}
+
+// Small, decorative pictures of the real screens (hidden from screen readers;
+// the card text says the same thing).
+function miniResults(): HTMLElement {
+  const row = (name: string, verdict: string, good: boolean) =>
+    h("li", { class: good ? "good" : "" }, h("span", {}, name), h("strong", {}, `${good ? "✓ " : ""}${verdict}`));
+  return h(
+    "ul",
+    { class: "mini mini-results", "aria-hidden": "true" },
+    row("Raise eyebrows", "Works well", true),
+    row("Smile", "Works well", true),
+    row("Frown", "Not used", false),
+  );
+}
+
+function miniKeyboard(): HTMLElement {
+  const row = (keys: string, lit: boolean) =>
+    h("div", { class: `mini-row${lit ? " lit" : ""}` }, [...keys].map((k) => h("span", {}, k)));
+  return h("div", { class: "mini mini-keyboard", "aria-hidden": "true" }, row("ETAOIN", false), row("SHRDLU", true), row("CMWFGY", false));
+}
+
+function miniMessage(): HTMLElement {
   return h(
     "div",
-    { class: `ob-choice${primary ? " primary" : ""}` },
-    h("h4", {}, title),
+    { class: "mini mini-message", "aria-hidden": "true" },
+    h("p", {}, "I need some water"),
+    h("span", { class: "mini-speak" }, "Speak"),
+  );
+}
+
+function choice(i: number, title: string, text: string, button: string, primary: boolean, onClick: () => void): HTMLElement {
+  return h(
+    "div",
+    { class: `ob-choice reveal${primary ? " primary" : ""}`, style: `--i:${i}` },
+    h("h3", {}, title),
     h("p", {}, text),
     h("button", { class: primary ? "big-button" : "big-button secondary", onclick: onClick }, button),
   );

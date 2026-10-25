@@ -28,7 +28,9 @@ thresholds for that person.
 
 ## What works now
 
-0. **Welcome and onboarding:** a short description, then **create a profile on this
+0. **Welcome and onboarding:** a short description and a **live 3D face demo** (the
+   standard face mesh with a red dot on each area not tested yet; "Try it with your
+   camera" makes it follow your face, and nothing is saved), then **create a profile on this
    device** (just a nickname, saved only in this browser, with no email, password, or
    online account) or **try as a guest** (nothing saved at all). Then a plain-language
    privacy step and why the camera is needed. The app always opens on this welcome
@@ -71,8 +73,11 @@ There's an always-visible status badge (Tracking / No face / Paused / Calibratin
 big buttons. Moments that can be frustrating but aren't anyone's fault (setup hints,
 "can't see your face", pauses, movements that didn't work) use a calm blue and say
 what to do next, instead of red warnings. Red is kept for deleting things. Whether
-this actually feels calmer hasn't been tested with anyone yet. The only animation is the logo assembling once; nothing flashes, and
-your system's "reduce motion" setting turns it off. Fonts (Inter, Inter Tight) are
+this actually feels calmer hasn't been tested with anyone yet. The welcome page has
+gentle entrance animations (the headline appears word by word, sections fade up as you
+scroll, the 3D face sways slowly) and the logo assembles once. Nothing loops or
+flashes, the app's working screens don't animate, and your system's "reduce motion"
+setting turns all of it off. Fonts (Inter, Inter Tight) are
 bundled with the app, not loaded from a font service. Text and indicator contrast is checked
 automatically (`npm run check:contrast`) on every publish.
 

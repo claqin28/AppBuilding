@@ -19,8 +19,8 @@
  *      the dataviz palette validator (ordinal, dark surface #0f1115):
  *      monotone lightness, visible gaps between steps, darkest step 2.85:1.
  *
- * Color is never the only signal: the legend, region labels, and a table show
- * the same numbers as text.
+ * Color is never the only signal: the legend, a hover label on each region's
+ * dot (regionNodes), and a table show the same numbers as text.
  *
  * This is a prototype visualization, not a medical or clinical assessment.
  */
@@ -171,6 +171,29 @@ export function pointColors(
     for (const i of regions[r]) if (i >= 0 && i < pointCount) colors[i] = color;
   }
   return colors;
+}
+
+/**
+ * The small dot drawn on each face region (instead of a text label covering
+ * the mesh). Untested regions get a red dot: "this area still needs testing".
+ * Tested regions use their result color. The label shows on hover.
+ */
+export interface RegionNode {
+  region: RegionId;
+  state: "untested" | "tested";
+  /** The dot's color for tested regions; null for untested (drawn red). */
+  color: string | null;
+  /** e.g. "Lips · 100%" or "Left eye · not tested yet". */
+  label: string;
+}
+
+export function regionNodes(scores: Record<RegionId, RegionScore> | null): RegionNode[] {
+  return REGION_IDS.map((r): RegionNode => {
+    const v = scores?.[r].value ?? null;
+    return v === null
+      ? { region: r, state: "untested", color: null, label: `${REGION_LABELS[r]} · not tested yet` }
+      : { region: r, state: "tested", color: colorFor(v), label: `${REGION_LABELS[r]} · ${percent(v)}` };
+  });
 }
 
 /** Short text for a region, e.g. "Lips: 100% (Smile 100%, Pucker 40%)". */

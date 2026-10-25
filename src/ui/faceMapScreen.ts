@@ -7,7 +7,10 @@
  * - Three.js is downloaded only when the 3D view is on (dynamic import).
  * - Live shape updates are throttled (at most 20 per second) and the view
  *   renders only when something changes.
- * - Color is never the only signal: labels on the head, a legend, and a table.
+ * - Small dots on the head instead of text labels that would cover the mesh:
+ *   red = not tested yet, otherwise the result color. Hover a dot for its name
+ *   and number. Color is never the only signal: the legend and the table
+ *   show everything as text.
  * - The live face shape is used only to draw the screen. Nothing is saved, and
  *   "Export image" uses the standard face, not the person's own face shape.
  */
@@ -32,6 +35,7 @@ import { liveToModel, standardShape } from "../viz/liveShape";
 import { webglAvailable } from "../viz/webgl";
 import type { AppContext, Screen } from "./app";
 import { downloadDataUrl, h, timestampForFile } from "./dom";
+import { MapNodes } from "./mapNodes";
 
 const LIVE_INTERVAL_MS = 50;
 const FACE_LOST_MS = 700;
@@ -49,11 +53,10 @@ export class FaceMapScreen implements Screen {
   private regions = buildRegions();
   private shape: Float32Array = standardShape();
   private lastFaceT = 0;
-  private labels = new Map<RegionId, HTMLElement>();
+  private nodes = new MapNodes();
   private els!: {
     view: HTMLElement;
     status: HTMLElement;
-    labelLayer: HTMLElement;
     legend: HTMLElement;
     table: HTMLTableSectionElement;
     note: HTMLElement;
@@ -99,9 +102,8 @@ export class FaceMapScreen implements Screen {
     }
 
     const view = h("div", { class: "facemap-view" });
-    const labelLayer = h("div", { class: "map-labels", "aria-hidden": "true" });
     const status = h("p", { class: "map-status", role: "status" });
-    view.append(labelLayer, status);
+    view.append(this.nodes.layer, status);
 
     const resetBtn = h("button", { class: "mid-button", onclick: () => this.head?.resetView() }, "Reset view");
     const exportBtn = h("button", { class: "mid-button", onclick: () => this.exportImage() }, "Export image (PNG)");
@@ -109,7 +111,6 @@ export class FaceMapScreen implements Screen {
     this.els = {
       view,
       status,
-      labelLayer,
       legend: h("ul", { class: "map-legend", "aria-label": "Color legend" }),
       table: h("tbody"),
       note: h("p", { class: "hint" }),
@@ -132,7 +133,7 @@ export class FaceMapScreen implements Screen {
       h(
         "div",
         { class: "button-row" },
-        h("span", { class: "hint" }, "Drag to rotate. Scroll or pinch to zoom."),
+        h("span", { class: "hint" }, "Drag to rotate. Scroll or pinch to zoom. Point at a dot to see its name and number."),
         resetBtn,
         exportBtn,
       ),
@@ -154,11 +155,6 @@ export class FaceMapScreen implements Screen {
       ),
     );
 
-    for (const r of REGION_IDS) {
-      const el = h("span", { class: "map-label" });
-      this.labels.set(r, el);
-      labelLayer.append(el);
-    }
     this.renderLegend();
     this.renderTable();
     if (this.ctx.settings.show3d) void this.start3d();
@@ -193,8 +189,8 @@ export class FaceMapScreen implements Screen {
       this.setStatus("The 3D view couldn't start on this device. The table below shows the same numbers.");
       return;
     }
-    this.els.view.append(this.els.labelLayer, this.els.status); // keep overlays above the canvas
-    this.head.onRender = () => this.placeLabels();
+    this.els.view.append(this.nodes.layer, this.els.status); // keep overlays above the canvas
+    this.head.onRender = () => this.placeNodes();
     this.showShape(this.shape);
     this.applyColors();
     this.lastFaceT = performance.now();
@@ -217,7 +213,7 @@ export class FaceMapScreen implements Screen {
     this.faceTimer = null;
     this.head?.dispose();
     this.head = null;
-    for (const el of this.labels.values()) el.hidden = true;
+    this.nodes.hide();
     this.setStatus("3D view is off. The table below shows the same numbers.");
   }
 
@@ -248,24 +244,16 @@ export class FaceMapScreen implements Screen {
     this.els.status.hidden = msg === "";
   }
 
-  // ----- Labels, legend, table ---------------------------------------------
+  // ----- Dots, legend, table -----------------------------------------------
 
+  /** Text label for the exported image (a downloaded picture can't be hovered). */
   private labelText(r: RegionId, scores: Record<RegionId, RegionScore> | null): string {
     const v = scores?.[r].value ?? null;
     return `${REGION_LABELS[r]} ${v === null ? "· not tested" : percent(v)}`;
   }
 
-  private placeLabels(): void {
-    if (!this.head) return;
-    const scores = this.scores();
-    for (const r of REGION_IDS) {
-      const el = this.labels.get(r)!;
-      const p = this.head.project(regionCentre(this.shape, this.regions[r]));
-      el.hidden = !p.visible;
-      el.textContent = this.labelText(r, scores);
-      el.style.left = `${p.x}px`;
-      el.style.top = `${p.y}px`;
-    }
+  private placeNodes(): void {
+    if (this.head) this.nodes.place(this.head, this.shape, this.regions, this.scores());
   }
 
   private renderLegend(): void {
@@ -273,6 +261,7 @@ export class FaceMapScreen implements Screen {
       ...legendEntries().map((e) =>
         h("li", {}, h("span", { class: "swatch", style: `background:${e.color}`, "aria-hidden": "true" }), e.label),
       ),
+      h("li", {}, h("span", { class: "node-swatch", "aria-hidden": "true" }), "Red dot on the head: not tested yet"),
     );
   }
 

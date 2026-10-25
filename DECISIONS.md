@@ -815,3 +815,89 @@ colors baked in as plain hex. If the logo changes, the icon must be re-exported.
 export script isn't in the repo, because it needs Playwright, which the project
 doesn't depend on.
 
+## Cluely-inspired welcome page, 3D face demo, and dots on the face map (2026-10-25)
+
+The owner asked for three things they liked on cluely.com:
+1. Text that animates in instead of just appearing.
+2. A picture of the real product: a live 3D face mesh on the welcome page that you can
+   try with your camera. It should mark untested areas with small red dots, not big
+   text labels covering the mesh, and the Face map screen should do the same.
+3. Cards that appear as you scroll, clear space between sections with titles, and
+   clean, Apple-like cards.
+
+**Source:** cluely.com can't be reached from the dev environment, so I worked from the
+owner's screen recording (frames pulled out with ffmpeg). Only the style was taken: no
+code, images, or text.
+
+**Welcome page** (`src/ui/onboarding.ts`, `showWelcome`):
+- **Hero:** centered, with a soft blue glow behind it. The headline appears word by
+  word (fade, rise, un-blur), then the subtitle, then the buttons, in about 1.7 s.
+- **"See what Tessera sees":** the live 3D demo in a soft frame, like a product shot.
+- **"How it works":** three cards (find your movements, scanning keyboard, spoken
+  words). Each has a small picture of the real screen.
+- **"Private by design":** four cards, the same promises as the onboarding privacy
+  step.
+- **"How do you want to start?":** the mosaic face logo, which assembles when it
+  scrolls into view (playing the floating-icon role from Cluely's page), then the
+  profile and guest choices.
+
+**Animation rules** (`src/ui/reveal.ts`, and listed at the top of `src/styles.css`):
+- Everything plays once. Nothing loops or flashes, and the app's working screens
+  don't animate.
+- Reduced motion turns all of it off (tested: every element visible at once, no sway).
+- Content is only hidden once the script is running (`reveal-ready`), so if anything
+  fails the page is still readable.
+- Anything that gets keyboard focus is revealed at once.
+
+**3D demo** (`src/ui/landingFace.ts`):
+- It reuses the Face map's Three.js view, the standard face, and the same live-shape
+  code, so it shows exactly what the app shows.
+- The head sways slowly, about 22° each way over 9 seconds. The sway runs only while
+  the demo is on screen, and never with reduced motion.
+- Dragging and zooming are off, so scrolling over the head scrolls the page.
+- "Try it with your camera" starts the app's camera, and the mesh then follows the
+  face. The privacy line sits right under the button: "Your video stays in this
+  browser tab. Nothing is recorded or sent." The live shape is only drawn, never
+  saved.
+- I checked first that face tracking works while the camera panel is hidden on the
+  welcome page (it does: "Tracking" at about 6 frames/s in the test).
+- When the welcome page closes, the 3D view is disposed, and the camera keeps
+  running for the app.
+- Without WebGL, the mosaic logo stays and a note says the app still works without
+  it.
+- **Cost:** Three.js (about 136 KB compressed) now downloads when the demo scrolls
+  near, on first-time visits too, not only when someone opens the Face map.
+
+**Dots instead of labels** (`src/ui/mapNodes.ts`, `regionNodes` in
+`src/signal/movementMap.ts` with tests):
+- There's one small dot per face region, on both the welcome demo and the Face map.
+- Red means not tested yet. A tested region's dot uses its result color.
+- Pointing at a dot shows its name and number, e.g. "Lips · 80%". The Face map's
+  legend explains the red dot, and its table still lists every number as text, so
+  nothing depends on hovering or on color.
+- The exported image keeps text labels, because a downloaded picture can't be hovered.
+- **Red is an exception to the color roles** (red otherwise means "deletes
+  something"). It's the owner's choice. "Not tested yet" isn't a problem, so if
+  volunteers read the red dots as errors, the fix is one token (`--node-untested`).
+- Fixed along the way: the dot positions now follow the head when it turns
+  (`project` uses the head's full transform, not just the mirror).
+
+**Cards:** a soft gradient, 30px corners, no heavy borders, and a soft shadow in the
+light theme. The shadow also applies to the app's main panels. One deep-blue card
+leads, like Cluely's. The contrast checks now cover all of it: card text, the blue
+card, highlighted words, the hero glow, the demo frame, and the red dot on both
+backgrounds.
+
+**Bug found and fixed:** the "hidden" attribute didn't hide elements whose class
+sets a display, such as pill buttons. So "Starting the camera…" stayed visible, and
+the demo button showed before the 3D view was ready. Fix: a global
+`[hidden] { display: none !important; }`.
+
+**Tested:** both themes and phone width (390 px, no sideways scrolling), plus reduced
+motion. The camera demo was tested with the fake camera. Onboarding, profiles, Talk,
+Face map, face-lost, and calm-blue checks all pass, with no errors and no outside
+requests.
+
+**Not tested:** a real webcam and a real phone, and whether the animations feel
+calm or distracting to someone who's tired.
+

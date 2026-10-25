@@ -9,6 +9,7 @@ import {
   legendEntries,
   NOT_TESTED_COLOR,
   pointColors,
+  regionNodes,
   regionScores,
   regionText,
   type RegionId,
@@ -145,3 +146,28 @@ describe("regionText", () => {
     expect(regionText(s.leftCheek)).toBe("Left cheek: not tested");
   });
 });
+
+describe("regionNodes (the dots on the 3D head)", () => {
+  it("nothing calibrated yet: every region gets a red 'not tested yet' dot", () => {
+    const nodes = regionNodes(null);
+    expect(nodes).toHaveLength(8);
+    for (const n of nodes) {
+      expect(n.state).toBe("untested");
+      expect(n.color).toBeNull();
+      expect(n.label).toMatch(/not tested yet$/);
+    }
+  });
+
+  it("tested regions use their result color and show the number; the rest stay untested", () => {
+    const nodes = regionNodes(regionScores(result([stat("mouthOpen", 0.8, 0.3)]), "reliability"));
+    const lips = nodes.find((n) => n.region === "lips")!;
+    expect(lips).toMatchObject({ state: "tested", color: colorFor(0.8), label: "Lips · 80%" });
+    expect(nodes.find((n) => n.region === "leftEye")!.state).toBe("untested");
+  });
+
+  it("a tested movement that scored 0% is tested, not 'not tested'", () => {
+    const nodes = regionNodes(regionScores(result([stat("cheekPuff", 0, 0.2, false, ["inconsistent"])]), "reliability"));
+    expect(nodes.find((n) => n.region === "leftCheek")).toMatchObject({ state: "tested", label: "Left cheek · 0%" });
+  });
+});
+

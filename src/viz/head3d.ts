@@ -9,8 +9,9 @@
  * Performance and comfort:
  *  - Renders ON DEMAND: only when the shape, colors, view, or size change.
  *    There is no constant animation loop, and the caller throttles live updates.
- *  - No auto-rotation and no "inertia" after dragging (respects reduced motion,
- *    and nothing moves unless the person or their face moves).
+ *  - No auto-rotation and no "inertia" after dragging. The welcome page's
+ *    slow left-right sway is driven by its caller (setTurn), only while it's
+ *    on screen, and never with reduced motion.
  *  - dispose() releases all GPU memory when the view closes.
  *
  * The head is shown like a mirror (the person's left on the screen's left),
@@ -137,9 +138,31 @@ export class Head3D {
     this.requestRender();
   }
 
-  /** Where a 3D point lands on the canvas, in CSS pixels (for HTML labels). */
+  /** Turns the head left or right (radians). Used by the welcome page's slow sway. */
+  setTurn(yaw: number): void {
+    this.group.rotation.y = yaw;
+    this.requestRender();
+  }
+
+  /**
+   * Drag-to-rotate and zoom on or off. Off on the welcome page, so scrolling
+   * over the head scrolls the page instead of zooming the head.
+   */
+  setInteractive(on: boolean): void {
+    this.controls.enabled = on;
+    const canvas = this.renderer.domElement;
+    canvas.style.touchAction = on ? "none" : "pan-y";
+    canvas.style.cursor = on ? "" : "default";
+  }
+
+  setLabel(text: string): void {
+    this.renderer.domElement.setAttribute("aria-label", text);
+  }
+
+  /** Where a 3D point lands on the canvas, in CSS pixels (for the dots on the head). */
   project(p: readonly [number, number, number]): ScreenPoint {
-    const v = new Vector3(-p[0], p[1], p[2]); // same mirror as the group
+    this.group.updateMatrixWorld();
+    const v = new Vector3(p[0], p[1], p[2]).applyMatrix4(this.group.matrixWorld); // same mirror and turn as the head
     v.project(this.camera);
     return { x: ((v.x + 1) / 2) * this.width, y: ((1 - v.y) / 2) * this.height, visible: v.z < 1 };
   }

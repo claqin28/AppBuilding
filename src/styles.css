@@ -10,7 +10,9 @@
  *  - Calm blue (--calm*) is for moments that can be frustrating but are nobody's
  *    fault: setup hints, "can't see your face", pauses, movements that didn't
  *    work, a camera that didn't start. They're clear but not alarming.
- *  - Red (--bad) is kept for actions that delete things.
+ *  - Red (--bad) is kept for actions that delete things. Exception, by the
+ *    owner's choice (2026-10-25): the small red dots on the 3D face that mark
+ *    "not tested yet" (--node-untested).
  *  - Yellow is kept for the scanning highlight, which must be the most visible
  *    thing on the screen.
  *  - Green means ready / it worked.
@@ -18,9 +20,12 @@
  * Accessibility rules this file follows:
  *  - States never rely on color alone (icons, text, outlines, thick borders).
  *  - Large targets: buttons are at least 52-64px tall.
- *  - No transitions. The ONE animation is the logo's triangles "clicking"
- *    together: it plays once (~1.4 s), each piece appears once (no flashing),
- *    and it's turned off for people who ask for reduced motion.
+ *  - Animations, all on the welcome page except the logo, each playing once
+ *    (nothing loops or flashes), and all turned off for reduced motion:
+ *      the logo's triangles clicking together; the headline appearing word
+ *      by word; sections and cards fading up the first time they scroll
+ *      into view; the 3D face's slow sway (JS, src/ui/landingFace.ts).
+ *    The app's working screens have no animation.
  */
 
 /* ---------- Theme tokens ---------------------------------------------------- */
@@ -63,7 +68,21 @@
   --logo-lips: #a3bde4;
   --logo-mouth: #1a3459;
   --logo-glint: #ffffff;
-  --shadow: none;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 12px 32px rgba(16, 24, 40, 0.06);
+  --card-1: #ffffff;
+  --card-2: #f6f8fc;
+  --blue-card-1: #3363c6;
+  --blue-card-2: #2450ad;
+  --blue-card-text: #ffffff;
+  --blue-card-muted: #e3ebfb;
+  --blue-card-pill: #587fd0;
+  --pill-bg: #e8f0fc;
+  --pill-text: #1d4f9c;
+  --frame-1: #e4ebf7;
+  --frame-2: #cfdcf1;
+  --hero-glow: #dbe7fb;
+  --map-bg: #0b0d11;
+  --node-untested: #e5484d;
 }
 
 /* Dark tokens: used when the person picks Dark, or picks Auto on a dark system. */
@@ -106,6 +125,20 @@
   --logo-mouth: #0e1b30;
   --logo-glint: #ffffff;
   --shadow: none;
+  --card-1: #18191d;
+  --card-2: #141518;
+  --blue-card-1: #2f5fc0;
+  --blue-card-2: #1f4596;
+  --blue-card-text: #ffffff;
+  --blue-card-muted: #dfe8fb;
+  --blue-card-pill: #5479c6;
+  --pill-bg: #17294a;
+  --pill-text: #a9c8f5;
+  --frame-1: #1a2233;
+  --frame-2: #10151f;
+  --hero-glow: #11213a;
+  --map-bg: #0b0d11;
+  --node-untested: #e5484d;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -147,12 +180,28 @@
     --logo-mouth: #0e1b30;
     --logo-glint: #ffffff;
     --shadow: none;
+    --card-1: #18191d;
+    --card-2: #141518;
+    --blue-card-1: #2f5fc0;
+    --blue-card-2: #1f4596;
+    --blue-card-text: #ffffff;
+    --blue-card-muted: #dfe8fb;
+    --blue-card-pill: #5479c6;
+    --pill-bg: #17294a;
+    --pill-text: #a9c8f5;
+    --frame-1: #1a2233;
+    --frame-2: #10151f;
+    --hero-glow: #11213a;
+    --map-bg: #0b0d11;
+    --node-untested: #e5484d;
   }
 }
 
 /* ---------- Base ------------------------------------------------------------ */
 
 * { box-sizing: border-box; }
+/* "hidden" always hides, even on elements whose class sets a display (buttons, dots). */
+[hidden] { display: none !important; }
 html { font-size: 18px; }
 body {
   margin: 0;
@@ -284,40 +333,116 @@ body.is-onboarding .onboarding { display: block; }
   max-width: 1100px; margin: 0 auto; background: var(--surface); border: 1px solid var(--card-border);
   border-radius: 28px; padding: 36px; box-shadow: var(--shadow);
 }
-.ob-welcome { max-width: 1280px; margin: 0 auto; display: grid; gap: 20px; }
-.hero { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-@media (max-width: 900px) { .hero { grid-template-columns: 1fr; } }
-.hero-card { background: var(--surface); border: 1px solid var(--card-border); border-radius: 28px; padding: clamp(28px, 5vw, 64px); }
-.hero-text { display: flex; flex-direction: column; justify-content: center; gap: 20px; }
-.display { font-size: clamp(2.6rem, 5.4vw, 4.6rem); font-weight: 800; letter-spacing: -0.032em; word-spacing: 0.04em; line-height: 1.02; margin: 0; }
-.hero-text .lead { font-size: 1.2rem; color: var(--muted); max-width: 34em; margin: 0; }
-.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+@media (max-width: 700px) { .ob-card { padding: 20px; } }
+
+/* ---------- Welcome (landing) page -------------------------------------------- */
+
+.ob-welcome { max-width: 1180px; margin: 0 auto; padding-bottom: 40px; }
+
+/* Hero: centered, like a product page. The headline appears word by word. */
+.landing-hero {
+  display: grid; justify-items: center; gap: 22px; text-align: center;
+  padding: clamp(48px, 9vw, 120px) 16px clamp(16px, 3vw, 32px); border-radius: 40px;
+  background: radial-gradient(ellipse 70% 85% at 50% 0%, var(--hero-glow), transparent 72%);
+}
+.eyebrow { margin: 0; padding: 7px 16px; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow); color: var(--muted); font-weight: 650; font-size: 0.95rem; }
+.display { font-size: clamp(2.8rem, 6.6vw, 5.4rem); font-weight: 800; letter-spacing: -0.035em; word-spacing: 0.05em; line-height: 1.02; margin: 0; max-width: 12em; }
+.display .word { display: inline-block; }
+.landing-hero .lead { font-size: clamp(1.1rem, 1.6vw, 1.3rem); color: var(--muted); max-width: 36em; margin: 0; }
+.hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 .hero-actions .pill-button { min-height: 60px; padding: 12px 36px; font-size: 1.15rem; }
 .pill-button.secondary { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
-.hero-visual { position: relative; display: grid; place-items: center; min-height: 420px; }
-.hero-visual .face-logo { width: min(360px, 80%); height: auto; }
-.chip { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); white-space: nowrap;
-  padding: 8px 18px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); font-weight: 650; font-size: 0.95rem; }
-.ob-section { background: var(--surface); border: 1px solid var(--card-border); border-radius: 28px; padding: clamp(24px, 4vw, 40px); }
-.ob-section h3:first-child { margin-top: 0; }
-@media (max-width: 700px) { .ob-card { padding: 20px; } }
-.ob-hero { display: flex; flex-wrap: wrap; gap: 24px 32px; align-items: center; margin-bottom: 8px; }
-.ob-hero > div { flex: 1 1 320px; }
-.ob-title { font-size: 2.1rem; margin-bottom: 10px; }
-.ob-lead { font-size: 1.15rem; }
-.ob-features { list-style: none; padding: 0; margin: 20px 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.ob-feature { display: grid; align-content: start; gap: 6px; padding: 18px 20px; background: var(--surface-2); border-radius: 20px; }
-.ob-feature strong { font-family: "Inter Tight Variable", "Inter Variable", sans-serif; font-size: 1.1rem; letter-spacing: -0.01em; }
-.ob-feature span { color: var(--muted); }
-.ob-choices { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 16px; }
-.ob-choice { display: flex; flex-direction: column; gap: 8px; padding: 24px; border: 2px solid var(--border); border-radius: 24px; background: var(--surface-2); }
+
+/* Entrance animations: each plays once. Reduced motion turns them all off (end of file). */
+.display .word { animation: word-in 750ms cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(120ms + var(--i, 0) * 75ms); }
+.landing-hero .eyebrow { animation: fade-up 700ms ease both; }
+.landing-hero .lead { animation: fade-up 800ms ease both; animation-delay: 750ms; }
+.landing-hero .hero-actions { animation: fade-up 800ms ease both; animation-delay: 950ms; }
+@keyframes word-in {
+  from { opacity: 0; transform: translateY(0.35em); filter: blur(10px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+/* Fade up on first scroll into view. Only hidden once the script is watching
+   (.reveal-ready), so the page is still readable if anything goes wrong. */
+.reveal-ready .reveal {
+  opacity: 0; transform: translateY(28px); filter: blur(6px);
+  transition: opacity 800ms ease, transform 800ms cubic-bezier(0.2, 0.7, 0.2, 1), filter 800ms ease;
+  transition-delay: calc(var(--i, 0) * 90ms);
+}
+.reveal-ready .reveal.is-revealed { opacity: 1; transform: none; filter: none; }
+
+/* Sections: big centered titles, with clear space between sections. */
+.landing-section { margin-top: clamp(80px, 11vw, 150px); scroll-margin-top: 24px; }
+/* The demo sits close under the hero, so the 3D face peeks up on the first screen. */
+#ob-demo { margin-top: clamp(32px, 5vw, 64px); }
+.landing-section:focus { outline: none; }
+.section-head { text-align: center; max-width: 44em; margin: 0 auto clamp(28px, 4vw, 48px); }
+.section-title { font-size: clamp(2rem, 4.4vw, 3.4rem); font-weight: 750; letter-spacing: -0.03em; line-height: 1.08; margin: 0 0 12px; }
+.section-sub { margin: 0; color: var(--muted); font-size: clamp(1.05rem, 1.5vw, 1.25rem); }
+
+/* Demo: the live 3D face in a soft frame, like a product picture. */
+.demo { padding: clamp(10px, 1.6vw, 18px); border-radius: 40px; background: linear-gradient(160deg, var(--frame-1), var(--frame-2)); box-shadow: var(--shadow); }
+.demo-stage { position: relative; display: grid; place-items: center; height: clamp(340px, 46vw, 560px); border-radius: 30px; overflow: hidden; background: var(--map-bg); }
+.demo-stage canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.demo-stage .face-logo { --logo-gap: var(--map-bg); }
+.demo-chip { position: absolute; top: 16px; left: 16px; margin: 0; padding: 6px 14px; border-radius: 999px; background: rgba(15, 17, 21, 0.8); color: #e8edf5; font-weight: 600; font-size: 0.9rem; }
+.demo-chip.lost { color: #9cc6f4; }
+.demo-bar { display: grid; justify-items: center; gap: 10px; padding: 22px 12px 12px; text-align: center; }
+.demo-bar p { margin: 0; }
+.demo-note { font-weight: 600; }
+.demo-legend { color: var(--muted); font-size: 0.95rem; }
+
+/* Cards: clean and rounded, a soft gradient, no heavy borders. */
+.card-grid { display: grid; gap: 20px; }
+.card-grid.three { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.card-grid.two { grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+.feature-card, .info-card {
+  display: flex; flex-direction: column; gap: 12px; padding: clamp(24px, 3vw, 36px); border-radius: 30px;
+  background: linear-gradient(180deg, var(--card-1), var(--card-2)); border: 1px solid var(--card-border); box-shadow: var(--shadow);
+}
+.feature-card h3, .info-card h3 { margin: 0; font-size: clamp(1.3rem, 2vw, 1.6rem); font-weight: 650; letter-spacing: -0.02em; line-height: 1.3; }
+.feature-card p, .info-card p { margin: 0; color: var(--muted); font-size: 1.05rem; }
+.feature-card .card-step { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+.feature-card.blue { background: linear-gradient(160deg, var(--blue-card-1), var(--blue-card-2)); color: var(--blue-card-text); border-color: transparent; }
+.feature-card.blue p { color: var(--blue-card-muted); }
+.title-pill { display: inline-block; padding: 0 0.4em; border-radius: 999px; background: var(--pill-bg); color: var(--pill-text); }
+.feature-card.blue .title-pill { background: var(--blue-card-pill); color: var(--blue-card-text); }
+
+/* Small pictures of the real screens inside the cards (decorative). */
+.mini { margin: auto 0 0; padding: 12px; border-radius: 18px; background: var(--surface-2); list-style: none; }
+.mini-results { display: grid; gap: 8px; }
+.mini-results li { display: flex; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--blue-card-2); font-size: 0.95rem; }
+.feature-card.blue .mini { background: rgba(255, 255, 255, 0.12); }
+.mini-keyboard { display: grid; gap: 6px; }
+.mini-row { display: flex; gap: 6px; padding: 4px; border-radius: 12px; border: 2px solid transparent; }
+.mini-row span { flex: 1; padding: 6px 0; border-radius: 8px; background: var(--surface); border: 1px solid var(--border-strong); text-align: center; font-weight: 700; font-size: 0.95rem; }
+.mini-row.lit { border-color: var(--hl-row-border); background: var(--hl-row-bg); }
+.mini-row.lit span:nth-child(3) { background: var(--highlight); color: var(--highlight-text); border-color: var(--highlight-text); }
+.mini-message { display: grid; gap: 10px; justify-items: start; }
+.mini-message p { width: 100%; margin: 0; padding: 10px 14px; border-radius: 16px; border: 2px solid var(--calm); background: var(--calm-soft); color: var(--text); font-size: 1.1rem; font-weight: 600; }
+.mini-speak { padding: 6px 18px; border-radius: 999px; border: 3px solid var(--ok); background: var(--surface); font-weight: 700; }
+
+/* Start: the mosaic face, then the two ways in. */
+.start-section { text-align: center; }
+.start-logo { display: grid; place-items: center; margin-bottom: 24px; }
+.start-logo .face-logo { filter: drop-shadow(0 18px 28px rgba(29, 95, 166, 0.25)); }
+.ob-choices { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); max-width: 980px; margin: 0 auto; text-align: left; }
+.ob-choice {
+  display: flex; flex-direction: column; gap: 10px; padding: clamp(24px, 3vw, 36px); border-radius: 30px;
+  background: linear-gradient(180deg, var(--card-1), var(--card-2)); border: 2px solid var(--card-border); box-shadow: var(--shadow);
+}
 .ob-choice.primary { border-color: var(--accent); }
-.ob-choice h4 { margin: 0; font-size: 1.15rem; }
-.ob-choice p { margin: 0; flex: 1; }
+.ob-choice h3 { margin: 0; font-size: 1.4rem; font-weight: 650; letter-spacing: -0.02em; }
+.ob-choice p { margin: 0; flex: 1; color: var(--muted); }
 .ob-choice .big-button { width: 100%; }
 .big-button.secondary { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
-.ob-returning { margin: 0 0 8px; padding: 16px 20px; border-radius: 20px; background: var(--surface-2); }
-.ob-returning h3 { margin-top: 0; }
+.ob-returning { max-width: 980px; margin: 0 auto 20px; padding: 18px 24px; border-radius: 24px; background: var(--card-1); border: 1px solid var(--card-border); box-shadow: var(--shadow); text-align: left; }
+.ob-returning h3 { margin: 0 0 4px; }
+.landing-note { text-align: center; margin: 56px auto 0; }
 .ob-progress { color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.85rem; }
 .ob-list { padding-left: 1.2em; display: grid; gap: 10px; font-size: 1.05rem; }
 .ob-label { display: block; font-weight: 700; margin: 12px 0 6px; }
@@ -498,12 +623,25 @@ progress { width: 100%; height: 14px; margin-top: 14px; accent-color: var(--acce
    validated against this dark background) ----------------------------------- */
 
 .map-controls { display: flex; flex-wrap: wrap; gap: 12px; margin: 10px 0; }
-.facemap-view { position: relative; height: min(60vh, 520px); min-height: 320px; background: #0b0d11; border-radius: 22px; overflow: hidden; }
+.facemap-view { position: relative; height: min(60vh, 520px); min-height: 320px; background: var(--map-bg); border-radius: 22px; overflow: hidden; }
 .facemap-view canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
-.map-labels { position: absolute; inset: 0; pointer-events: none; }
-.map-label { position: absolute; transform: translate(-50%, -50%); background: rgba(15, 17, 21, 0.85); color: #f4f6fa;
-  font-size: 0.8rem; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
-.map-label[hidden] { display: none; }
+/* One small dot per face region (src/ui/mapNodes.ts): red = not tested yet,
+   otherwise the result color. Pointing at a dot shows its name and number. */
+.map-nodes { position: absolute; inset: 0; pointer-events: none; }
+.map-node {
+  position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%;
+  background: #aab3c2; box-shadow: 0 0 0 2px #ffffff, 0 2px 8px rgba(0, 0, 0, 0.6); pointer-events: auto; cursor: help;
+}
+.map-node[data-state="untested"] { background: var(--node-untested); }
+.map-node[hidden] { display: none; }
+.map-node::after {
+  content: attr(data-label); position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%);
+  padding: 3px 9px; border-radius: 8px; background: rgba(15, 17, 21, 0.92); color: #f4f6fa;
+  font-size: 0.8rem; font-weight: 600; white-space: nowrap; opacity: 0; pointer-events: none;
+}
+.map-node:hover { z-index: 1; }
+.map-node:hover::after { opacity: 1; }
+.node-swatch { display: inline-block; width: 12px; height: 12px; margin-right: 8px; border-radius: 50%; background: var(--node-untested); box-shadow: 0 0 0 2px var(--surface); vertical-align: -1px; }
 .map-status { position: absolute; inset: 0; margin: 0; display: flex; align-items: center; justify-content: center;
   text-align: center; padding: 24px; color: #b8c0cc; }
 .map-status.corner { inset: auto 8px 8px auto; padding: 4px 10px; background: rgba(15, 17, 21, 0.9); border-radius: 6px; color: #9cc6f4; font-weight: 700; }
